@@ -12,8 +12,8 @@
     --green:#43d399; --yellow:#f5c451; --red:#f87171; --orange:#fb923c; --grey:#6b7280;
   }
   *{box-sizing:border-box}
-  html,body{margin:0;height:100%;font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
-  #app{display:grid;grid-template-columns:256px 1fr 322px;grid-template-rows:1fr 232px;height:100vh}
+  html{margin:0;height:100%;overflow:hidden}body{margin:0;height:100%;display:flex;flex-direction:column;font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+  #app{display:grid;grid-template-columns:256px 1fr 322px;grid-template-rows:1fr 232px;flex:1;min-height:0}
   .panel{background:var(--panel);border:1px solid var(--line);overflow-y:auto}
   #left{grid-row:1/3;padding:14px;display:flex;flex-direction:column;gap:15px}
   .brand{font-weight:800;font-size:18px;letter-spacing:.5px}
@@ -91,9 +91,62 @@
   .gloss{border-top:1px solid var(--line);padding:9px 0}
   .gloss b{color:var(--accent);font-size:13px}
   .gloss p{margin:3px 0 0;font-size:12.5px;color:var(--text);line-height:1.5}
+
+  /* ── TAB NAV ── */
+  #tabNav{display:flex;align-items:center;gap:3px;padding:8px 14px;background:var(--panel);border-bottom:1px solid var(--line);flex-shrink:0}
+  #tabNav .tnLogo{font-weight:800;font-size:15px;margin-right:12px;color:var(--text);letter-spacing:.5px}
+  #tabNav .tnLogo span{color:var(--accent)}
+  #tabNav .tnTab{background:none;border:none;color:var(--muted);padding:6px 13px;border-radius:7px;font-size:12.5px;font-weight:600;cursor:pointer;transition:.15s;letter-spacing:.2px;white-space:nowrap}
+  #tabNav .tnTab:hover{color:var(--text);background:var(--panel2)}
+  #tabNav .tnTab.on{background:var(--accent);color:#0b0e14}
+  #tabNav .tnTab.soon{opacity:.35;cursor:default;pointer-events:none}
+  #tabNav .tnSoon{font-size:10px;color:var(--muted);margin-left:6px}
+
+  /* ── FOUNDERS TAB ── */
+  #foundersTab{display:none;flex:1;overflow-y:auto;padding:36px 44px;background:var(--bg)}
+  .ft-co{font-size:11px;text-transform:uppercase;letter-spacing:1.8px;color:var(--muted);margin-bottom:6px}
+  .ft-title{font-size:34px;font-weight:800;color:var(--text);line-height:1.1}
+  .ft-title span{color:var(--accent)}
+  .ft-tags{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .ft-tag{font-size:12px;color:var(--muted);background:var(--panel);border:1px solid var(--line);padding:3px 10px;border-radius:20px}
+  .ft-meta{display:flex;gap:18px;margin-top:12px;flex-wrap:wrap;align-items:center}
+  .ft-meta span,.ft-meta a{font-size:12px;color:var(--muted);text-decoration:none}
+  .ft-meta a:hover{color:var(--accent)}
+  .ft-hr{border:none;border-top:1px solid var(--line);margin:28px 0}
+  .ft-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:14px}
+  .ft-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:780px;margin-bottom:10px}
+  .ft-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px 24px}
+  .ft-card.lead{border-color:var(--accent)}
+  .ft-role{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--accent);margin-bottom:6px}
+  .ft-name{font-size:20px;font-weight:800;color:var(--text);margin-bottom:10px}
+  .ft-desc{font-size:13px;color:var(--muted);line-height:1.65}
+  .ft-chips{margin-top:12px;display:flex;flex-wrap:wrap;gap:5px}
+  .ft-chip{font-size:10px;background:var(--panel2);border:1px solid var(--line);padding:2px 8px;border-radius:20px;color:var(--muted)}
+  .ft-vision{max-width:720px;background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:18px 22px}
+  .ft-vision p{font-size:13.5px;line-height:1.75;color:var(--text);margin:0}
+  .ft-vision p+p{margin-top:10px;color:var(--muted)}
+  .ft-hist{max-width:680px}
+  .ft-hrow{display:flex;gap:14px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .ft-hrow:last-child{border-bottom:none}
+  .ft-hdot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
+  .ft-htext{font-size:13px;color:var(--muted);line-height:1.5}
+  .ft-htext b{color:var(--text)}
+
 </style>
 </head>
 <body>
+<nav id="tabNav">
+  <div class="tnLogo">aaa<span>woo</span></div>
+  <button class="tnTab on" onclick="switchTab('graph')">Graph</button>
+  <button class="tnTab" onclick="switchTab('founders')">Founders</button>
+  <button class="tnTab soon">Team</button>
+  <button class="tnTab soon">Core Service</button>
+  <button class="tnTab soon">Surrounding Services</button>
+  <button class="tnTab soon">Budget</button>
+  <button class="tnTab soon">Market</button>
+  <button class="tnTab soon">Access</button>
+  <span class="tnSoon">— more tabs coming</span>
+</nav>
 <div id="app">
   <div id="left" class="panel">
     <div>
@@ -2006,3 +2059,81 @@ window.AAAWOO_GRAPH = {
   document.getElementById('btnImport').onclick=function(){document.getElementById('fileIn').click();};
   document.getElementById('fileIn').onchange=function(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(){try{loadGraph(JSON.parse(r.result));}catch(err){alert('Bad JSON: '+err.message);}};r.readAsText(f);};
   function loadGraph(j){DATA.nodes=j.nodes.map(function(n){var c=Object.assign({},n);delete c._pos;return c;});DATA.edges=j.edges;cy.elements().remove();cy.add(toElements());var hasPos=j.nodes.some(function(n){return n._pos;});if(hasPos)cy.nodes().forEach(function(n){var src=j.nodes.find(function(x){return x.id===n.id();});if(src&&src._pos)n.position(src._pos);});else cy.layout({name:'cose',animate:false,nodeRepulsion:9000,idealEdgeLength:95,padding:40}).run();renderHealth();applyFi
+
+<div id="foundersTab">
+  <div class="ft-co">EMBUR FORGE Private Limited</div>
+  <div class="ft-title">aaa<span>woo</span></div>
+  <div class="ft-tags">
+    <span class="ft-tag">for every pet, everywhere</span>
+    <span class="ft-tag">a different kind of pet platform</span>
+  </div>
+  <div class="ft-meta">
+    <span>📍 Bengaluru, India</span>
+    <a href="mailto:emburforge@gmail.com">emburforge@gmail.com</a>
+    <a href="http://www.emburforge.com" target="_blank">www.emburforge.com</a>
+  </div>
+
+  <hr class="ft-hr">
+
+  <div class="ft-label">The Founders</div>
+  <div class="ft-grid">
+    <div class="ft-card lead">
+      <div class="ft-role">Co-founder &amp; CEO</div>
+      <div class="ft-name">Gautam Purushotham</div>
+      <div class="ft-desc">Creative direction, product vision, and investor relations. Drives the brand architecture and overall product strategy from the ground up.</div>
+      <div class="ft-chips">
+        <span class="ft-chip">Creative Direction</span>
+        <span class="ft-chip">Product Vision</span>
+        <span class="ft-chip">Investor Relations</span>
+      </div>
+    </div>
+    <div class="ft-card">
+      <div class="ft-role">Co-founder &amp; CFO</div>
+      <div class="ft-name">Bhanu Khandelwal</div>
+      <div class="ft-desc">Financial discipline and structure. Anchors the numbers. Moves into investor relations in Year 2 as the platform scales.</div>
+      <div class="ft-chips">
+        <span class="ft-chip">Financial Discipline</span>
+        <span class="ft-chip">Investor Relations (Yr 2)</span>
+      </div>
+    </div>
+  </div>
+
+  <hr class="ft-hr">
+
+  <div class="ft-label">What we're building &amp; why</div>
+  <div class="ft-vision">
+    <p>aaawoo is a pet platform for India — built so that pet identity, services, community, and safety live in one place.</p>
+    <p>The brand architecture is deliberate: the company sits back, the mascots do the talking. aaawoo doesn't lead with its name, its founders, or its features — it leads with a mascot universe.</p>
+  </div>
+
+  <hr class="ft-hr">
+
+  <div class="ft-label">Company history</div>
+  <div class="ft-hist">
+    <div class="ft-hrow">
+      <div class="ft-hdot" style="background:var(--accent)"></div>
+      <div class="ft-htext"><b>Now — aaawoo</b> · EMBUR FORGE Private Limited. The current, active brand. Everything here is this.</div>
+    </div>
+    <div class="ft-hrow">
+      <div class="ft-hdot" style="background:var(--muted)"></div>
+      <div class="ft-htext"><b>Retired — Petstorie</b> · Previous name. Fully archived. Not in use.</div>
+    </div>
+    <div class="ft-hrow">
+      <div class="ft-hdot" style="background:var(--muted)"></div>
+      <div class="ft-htext"><b>Retired — Loyal Tales</b> · Original name. Fully archived. Not in use.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function switchTab(name){
+    document.querySelectorAll('#tabNav .tnTab').forEach(function(t){t.classList.remove('on');});
+    var clicked = Array.from(document.querySelectorAll('#tabNav .tnTab')).find(function(t){return t.textContent.trim().toLowerCase()===name||t.getAttribute('onclick')==="switchTab('"+name+"')"});
+    if(clicked) clicked.classList.add('on');
+    document.getElementById('app').style.display = name==='graph' ? 'grid' : 'none';
+    document.getElementById('foundersTab').style.display = name==='founders' ? 'flex' : 'none';
+    if(name==='founders') document.getElementById('foundersTab').style.flexDirection='column';
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,2008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>aaawoo · Living Command Center</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js"></script>
+<style>
+  :root{
+    --bg:#0d1017; --panel:#151a23; --panel2:#1b2230; --line:#252d3b;
+    --text:#e6ebf2; --muted:#8a97a8; --accent:#6ea8ff; --accent2:#a78bfa;
+    --green:#43d399; --yellow:#f5c451; --red:#f87171; --orange:#fb923c; --grey:#6b7280;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+  #app{display:grid;grid-template-columns:256px 1fr 322px;grid-template-rows:1fr 232px;height:100vh}
+  .panel{background:var(--panel);border:1px solid var(--line);overflow-y:auto}
+  #left{grid-row:1/3;padding:14px;display:flex;flex-direction:column;gap:15px}
+  .brand{font-weight:800;font-size:18px;letter-spacing:.5px}
+  .brand span{color:var(--accent)}
+  .sub{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4}
+  h4{margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
+  .grp{border-top:1px solid var(--line);padding-top:12px}
+  .chk{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:3px 0;cursor:pointer;color:var(--text)}
+  .chk input{accent-color:var(--accent);width:14px;height:14px}
+  .dot{width:9px;height:9px;border-radius:2px;display:inline-block;flex:none}
+  .stat{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;color:var(--muted)}
+  .stat b{color:var(--text);font-variant-numeric:tabular-nums}
+  .seg{display:flex;background:var(--panel2);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .seg button{flex:1;background:none;border:none;color:var(--muted);padding:7px 4px;font-size:11.5px;cursor:pointer;font-weight:600}
+  .seg button.on{background:var(--accent);color:#0b0e14}
+  .audDesc{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.4;min-height:28px}
+  #center{grid-row:1/2;position:relative;background:radial-gradient(circle at 50% 40%,#10151f 0,#0b0e14 100%)}
+  #cy{position:absolute;inset:0}
+  #topbar{position:absolute;top:10px;left:10px;right:10px;display:flex;gap:8px;z-index:5;flex-wrap:wrap;align-items:center}
+  .btn{background:var(--panel2);border:1px solid var(--line);color:var(--text);padding:7px 11px;border-radius:7px;font-size:12px;cursor:pointer;transition:.15s;white-space:nowrap}
+  .btn:hover{border-color:var(--accent);color:#fff}
+  .btn.on{background:var(--accent);border-color:var(--accent);color:#0b0e14;font-weight:600}
+  #search{flex:1;min-width:110px;background:var(--panel2);border:1px solid var(--line);color:var(--text);padding:7px 11px;border-radius:7px;font-size:12px}
+  #search::placeholder{color:var(--muted)}
+  .syncpill{position:absolute;bottom:10px;right:12px;z-index:5;background:rgba(13,16,23,.82);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:11px;color:var(--muted);display:flex;gap:8px;align-items:center}
+  .syncpill b{color:var(--text)}
+  .syncpill .led{width:8px;height:8px;border-radius:50%;background:var(--green)}
+  .syncpill.stale .led{background:var(--red)}
+  .hint{position:absolute;bottom:10px;left:12px;font-size:11px;color:var(--muted);z-index:5;background:rgba(13,16,23,.7);padding:4px 8px;border-radius:6px}
+  #right{grid-row:1/3;padding:0}
+  .rhead{padding:13px 15px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--panel);z-index:2}
+  .rbody{padding:14px 15px}
+  .badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:20px;margin:2px 4px 2px 0;font-weight:600}
+  .field{margin-bottom:11px}
+  .flabel{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:3px}
+  .fval{font-size:13px;line-height:1.5}
+  .quote{font-size:12px;font-style:italic;color:#c3cede;border-left:2px solid var(--accent);padding:6px 10px;background:var(--panel2);border-radius:0 6px 6px 0;line-height:1.45}
+  .srcfile{font-size:11px;color:var(--accent);word-break:break-all}
+  .meter{height:6px;border-radius:4px;background:var(--panel2);overflow:hidden;margin-top:4px}
+  .meter>i{display:block;height:100%;border-radius:4px}
+  .conn{font-size:12px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;margin-bottom:5px;cursor:pointer;display:flex;justify-content:space-between;gap:6px;align-items:center}
+  .conn:hover{border-color:var(--accent)}
+  .conn small{color:var(--muted);font-size:10px}
+  .editbtns{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+  textarea,input.ed{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:6px;font-size:12.5px;font-family:inherit;resize:vertical}
+  #bottom{grid-column:2/3;grid-row:2/3;border-top:1px solid var(--line);padding:14px 18px;background:linear-gradient(180deg,#11151d,#0d1017);overflow-y:auto}
+  #bottom h3{margin:0 0 4px;font-size:14px}
+  #bottom .lead{font-size:12px;color:var(--muted);margin-bottom:10px}
+  .insight{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  .icard{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 11px}
+  .icard .t{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+  .icard .v{font-size:13px;margin-top:3px;line-height:1.4}
+  .icard.warn{border-color:#5a3a1a;background:#1a130a}
+  .icard.bad{border-color:#5a2a2a;background:#1a0d0d}
+  .icard.ok{border-color:#1f4a36;background:#0c1812}
+  .empty{color:var(--muted);font-size:13px;text-align:center;padding:30px 10px;line-height:1.6}
+  ::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:#2a3342;border-radius:5px}
+  .legend{display:flex;flex-wrap:wrap;gap:4px 10px}
+  .legend span{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px}
+  .modal{position:fixed;inset:0;background:rgba(5,7,11,.7);display:none;align-items:center;justify-content:center;z-index:50}
+  .modal .box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;width:380px;max-width:90vw}
+  .modal h3{margin:0 0 12px}
+  .modal label{font-size:11px;color:var(--muted);display:block;margin:8px 0 3px}
+  #moneyPanel{display:none;position:absolute;top:54px;left:10px;z-index:8;background:rgba(20,26,35,.97);border:1px solid var(--line);border-radius:10px;padding:12px;width:300px;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+  #moneyPanel.show{display:block}
+  .mpHead{font-size:12px;color:var(--muted);margin-bottom:10px;font-weight:600}
+  .mpGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .mpCard{text-align:left;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:9px;cursor:pointer;color:var(--text);transition:.15s}
+  .mpCard:hover{border-color:var(--orange)}
+  .mpCard.on{border-color:var(--orange);background:#241608}
+  .mpCard b{display:block;font-size:12px;margin-bottom:2px}
+  .mpCard span{font-size:10.5px;color:var(--muted);line-height:1.3}
+  .mpClose{text-align:center;font-size:11px;color:var(--muted);margin-top:10px;cursor:pointer}
+  .mpClose:hover{color:var(--text)}
+  .gloss{border-top:1px solid var(--line);padding:9px 0}
+  .gloss b{color:var(--accent);font-size:13px}
+  .gloss p{margin:3px 0 0;font-size:12.5px;color:var(--text);line-height:1.5}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="left" class="panel">
+    <div>
+      <div class="brand">aaa<span>woo</span> · Command Center</div>
+      <div class="sub">Living node map of EMBUR FORGE. Every node traces to a source <code>.md</code>. Drag, click, edit, connect.</div>
+    </div>
+    <div class="grp">
+      <h4>Audience lens</h4>
+      <div class="seg" id="aud">
+        <button data-a="founder" class="on">Founder</button>
+        <button data-a="team">Team</button>
+        <button data-a="investor">Investor</button>
+      </div>
+      <div class="audDesc" id="audDesc"></div>
+    </div>
+    <div class="grp">
+      <h4>Layers</h4>
+      <div id="layerToggles"></div>
+    </div>
+    <div class="grp">
+      <h4>Node types</h4>
+      <div class="legend" id="typeLegend"></div>
+    </div>
+    <div class="grp">
+      <h4>System health</h4>
+      <div id="health"></div>
+    </div>
+  </div>
+
+  <div id="center">
+    <div id="topbar">
+      <input id="search" placeholder="Search nodes…">
+      <button class="btn" id="btnMoney">💰 Money</button>
+      <button class="btn" id="btnGloss">📖 Glossary</button>
+      <button class="btn" id="btnHeat">Heatmap: off</button>
+      <button class="btn" id="btnFocus">Focus</button>
+      <button class="btn" id="btnAdd">+ Node</button>
+      <button class="btn" id="btnConnect">Connect</button>
+      <button class="btn" id="btnFit">Fit</button>
+      <button class="btn" id="btnSave">Save</button>
+      <button class="btn" id="btnExport">Export</button>
+      <button class="btn" id="btnImport">Import</button>
+      <input type="file" id="fileIn" accept="application/json" style="display:none">
+    </div>
+    <div id="cy"></div>
+    <div id="moneyPanel">
+      <div class="mpHead">💰 Money view — pick what to look at</div>
+      <div class="mpGrid">
+        <button class="mpCard" data-m="cost"><b>What it all costs</b><span>The total spend, in big chunks</span></button>
+        <button class="mpCard" data-m="revenue"><b>Where money comes in</b><span>Every way aaawoo earns</span></button>
+        <button class="mpCard" data-m="pits"><b>Money pits</b><span>Costs not yet tied to earning</span></button>
+        <button class="mpCard" data-m="profit"><b>Profit &amp; when</b><span>In vs out over time</span></button>
+      </div>
+      <div class="mpClose" id="mpClose">Close money view ✕</div>
+    </div>
+    <div class="hint" id="hint">Click a node to inspect · drag to move · double-click to edit</div>
+    <div class="syncpill" id="syncpill" title="Click to check your source files for changes">
+      <span class="led"></span><span id="syncTxt">synced</span>
+      <button class="btn" id="btnSync" style="padding:3px 8px;font-size:11px">Check files</button>
+    </div>
+  </div>
+
+  <div id="right" class="panel">
+    <div class="rhead"><b>Inspector</b><div class="sub" id="rsub">Nothing selected</div></div>
+    <div class="rbody" id="inspector">
+      <div class="empty">Select a node or edge.<br>The inspector shows what it is, the evidence behind it, its source file, money, risks, and what it connects to.</div>
+    </div>
+  </div>
+
+  <div id="bottom">
+    <h3 id="bTitle">Executive read-out</h3>
+    <div class="lead" id="bLead">Click anything in the graph and this panel explains — in plain language — what it is, why it matters, and what to do next.</div>
+    <div class="insight" id="bInsight"></div>
+  </div>
+</div>
+
+<div class="modal" id="profitModal">
+  <div class="box" style="width:640px;max-width:94vw;max-height:88vh;overflow-y:auto">
+    <h3>📊 Money in vs money out — year by year</h3>
+    <div id="profitBody"></div>
+    <div class="editbtns" style="margin-top:14px;justify-content:flex-end"><button class="btn on" id="profitClose">Close</button></div>
+  </div>
+</div>
+
+<div class="modal" id="glossModal">
+  <div class="box" style="width:520px;max-height:80vh;overflow-y:auto">
+    <h3>📖 Glossary — words you'll see, in plain language</h3>
+    <div id="glossList"></div>
+    <div class="editbtns" style="margin-top:14px;justify-content:flex-end"><button class="btn on" id="glossClose">Got it</button></div>
+  </div>
+</div>
+
+<div class="modal" id="addModal">
+  <div class="box">
+    <h3>Add node</h3>
+    <label>Name</label><input class="ed" id="nName" placeholder="e.g. Premium Pet Card">
+    <label>Type</label><input class="ed" id="nType" placeholder="feature / cost / revenue / risk …" value="feature">
+    <label>Layer</label><input class="ed" id="nLayer" placeholder="product / financial / market …" value="product">
+    <label>Description</label><textarea id="nDesc" rows="3" placeholder="What is it and why does it matter?"></textarea>
+    <div class="editbtns" style="margin-top:14px;justify-content:flex-end">
+      <button class="btn" id="addCancel">Cancel</button>
+      <button class="btn on" id="addOk">Add node</button>
+    </div>
+  </div>
+</div>
+
+<script>
+window.AAAWOO_GRAPH = {
+  meta: {
+  "generatedAt": "2026-05-30",
+  "sourceCount": 21,
+  "sources": [
+    {
+      "file": "aaawoo_Master-Context.md",
+      "hash": "4f9135ff3008",
+      "bytes": 7386
+    },
+    {
+      "file": "06_Editable-Sources/Markdown/01_Phase-01/01_Pet-Card.md",
+      "hash": "95d3b1555d25",
+      "bytes": 26805
+    },
+    {
+      "file": "06_Editable-Sources/Markdown/01_Phase-01/02_Social-Media.md",
+      "hash": "70e4d4c182f4",
+      "bytes": 27856
+    },
+    {
+      "file": "06_Editable-Sources/Markdown/01_Phase-01/03_Lost-and-Found.md",
+      "hash": "ef54c9f9a3fa",
+      "bytes": 15461
+    },
+    {
+      "file": "06_Editable-Sources/Markdown/01_Phase-01/04_Events-and-Ticketing.md",
+      "hash": "ab1339bd1b93",
+      "bytes": 12993
+    },
+    {
+      "file": "06_Editable-Sources/Markdown/01_Phase-01/05_Vendor-Portal.md",
+      "hash": "74c64f6e08cd",
+      "bytes": 16574
+    },
+    {
+      "file": "06_Editable-Sources/Markdown/01_Phase-01/06_Microchip.md",
+      "hash": "dc5056f45d39",
+      "bytes": 17146
+    },
+    {
+      "file": "06_Editable-Sources/Markdown/01_Phase-01/07_Govt-Backing.md",
+      "hash": "71e7a7f3851a",
+      "bytes": 13085
+    },
+    {
+      "file": "06_Editable-Sources/Markdown/01_Phase-01/08_Mascot-Universe.md",
+      "hash": "d46093713941",
+      "bytes": 13345
+    },
+    {
+      "file": "06_Editable-Sources/Markdown/02_Phase-02/01_Pet-League.md",
+      "hash": "0fe9c8e36bc9",
+      "bytes": 23078
+    },
+    {
+      "file": "06_Editable-Sources/Markdown/03_Budget-and-Markets/01_Build-Order-and-Revenue.md",
+      "hash": "fdc5606315c9",
+      "bytes": 62754
+    },
+    {
+      "file": "06_Editable-Sources/Markdown/03_Budget-and-Markets/02_Market-Analysis.md",
+      "hash": "7c7de2da4404",
+      "bytes": 16250
+    },
+    {
+      "file": "06_Editable-Sources/Markdown/03_Budget-and-Markets/03_Customer-Landscape.md",
+      "hash": "d2e8f511e16b",
+      "bytes": 37887
+    },
+    {
+      "file": "06_Editable-Sources/Markdown/03_Budget-and-Markets/04_Marketing-Strategy.md",
+      "hash": "fa8ec36b4ef1",
+      "bytes": 13476
+    },
+    {
+      "file": "06_Editable-Sources/Markdown/04_Feature-Lists/01_Pet-Card_Features.md",
+      "hash": "48c0a1c95bb8",
+      "bytes": 39339
+    },
+    {
+      "file": "06_Editable-Sources/Markdown/04_Feature-Lists/02_Social-Media_Features.md",
+      "hash": "757f47ca173f",
+      "bytes": 23322
+    },
+    {
+      "file": "06_Editable-Sources/Markdown/04_Feature-Lists/03_Lost-and-Found_Features.md",
+      "hash": "3979d7f0d46d",
+      "bytes": 14558
+    },
+    {
+      "file": "06_Editable-Sources/Markdown/04_Feature-Lists/04_Events-and-Ticketing_Features.md",
+      "hash": "e01b19bdc197",
+      "bytes": 23887
+    },
+    {
+      "file": "06_Editable-Sources/Markdown/04_Feature-Lists/05_Vendor-Portal_Features.md",
+      "hash": "cc51ea15089a",
+      "bytes": 37424
+    },
+    {
+      "file": "06_Editable-Sources/Markdown/04_Feature-Lists/06_Pet-League_Features.md",
+      "hash": "304566f93c0d",
+      "bytes": 22993
+    },
+    {
+      "file": "05_Brand-and-Social/Competitor-Brief.md",
+      "hash": "8955b919ab96",
+      "bytes": 9706
+    }
+  ]
+},
+
+  nodes: [
+    // ---------- COMPANY / BRAND ----------
+    {
+      id: "embur-forge",
+      label: "EMBUR FORGE Pvt Ltd",
+      type: "company",
+      layer: "brand",
+      phase: "company",
+      reality: "current",
+      description: "The company behind aaawoo, based in Bengaluru, founded by Gautam Purushotham (CEO) and Bhanu Khandelwal (CFO). Earlier venture names Loyal Tales and Petstorie were retired.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "aaawoo_Master-Context.md",
+      source_quote: "EMBUR FORGE Private Limited · product: aaawoo · Bengaluru, India · Founders: Gautam Purushotham (CEO) · Bhanu Khandelwal (CFO)",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "aaawoo",
+      label: "aaawoo (platform)",
+      type: "system",
+      layer: "architecture",
+      phase: "company",
+      reality: "planned",
+      description: "A pet-first platform for India where pet identity, services, community and safety live in one place, built on the Pet Card identity layer. 'for every pet, everywhere'.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "aaawoo_Master-Context.md",
+      source_quote: "aaawoo is a pet platform for India — built so that pet identity, services, community, and safety live in one place.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "mascot-universe",
+      label: "Mascot Universe (brand layer)",
+      type: "system",
+      layer: "brand",
+      phase: "phase-1",
+      reality: "planned",
+      description: "The brand architecture: the company sits back and the mascots do the talking. A found-family of characters (Dog, Cat, Parrot, Rabbit, Indie) written originally in English and regional languages. Hints at a larger Phase-2 role.",
+      evidence: "proven",
+      confidence: 95,
+      source_file: "06_Editable-Sources/Markdown/01_Phase-01/08_Mascot-Universe.md",
+      source_quote: "The Company Sits Back. The Mascots Do the Talking.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+
+    // ---------- PHASE-1 PRODUCTS (systems) ----------
+    {
+      id: "pet-card",
+      label: "Pet Card",
+      type: "system",
+      layer: "product",
+      phase: "phase-1",
+      reality: "planned",
+      description: "The verified, lifelong pet identity card — the core object and spine of the whole platform. A real, verified identity for an animal, created by a real person, proven to exist.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/01_Phase-01/01_Pet-Card.md",
+      source_quote: "a real, verified identity for an animal, created by a real person, proven to exist.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "social-media",
+      label: "Media (Social Surface)",
+      type: "system",
+      layer: "product",
+      phase: "phase-1",
+      reality: "planned",
+      description: "The social feed of aaawoo — a proximity-aware, pet-anchored community surface, 'a feed that holds a population' rather than an attention machine.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/01_Phase-01/02_Social-Media.md",
+      source_quote: "We are not building a feed that takes time. We are building a feed that holds a population.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "lost-and-found",
+      label: "Lost & Found",
+      type: "system",
+      layer: "product",
+      phase: "phase-1",
+      reality: "planned",
+      description: "The civic-infrastructure recovery layer. It does not promise to find a pet; it promises that the right nearby pet-lovers will know its face and look. A bulletin and a relay (Stage One). No longer counted in revenue.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/01_Phase-01/03_Lost-and-Found.md",
+      source_quote: "We do not promise to find your pet. We promise that the people most likely to be near it will know its face... and will actually look.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: "Honest limitation: explicitly does not promise recovery; longer technical horizon deliberately undetailed."
+    },
+    {
+      id: "events-ticketing",
+      label: "Events & Ticketing",
+      type: "system",
+      layer: "product",
+      phase: "phase-1",
+      reality: "planned",
+      description: "The gathering layer: pet-first event discovery, booking, attendance and memory, native to the feed. 'The service that earns the platform its first real revenue.'",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/01_Phase-01/04_Events-and-Ticketing.md",
+      source_quote: "It is the first service that generates meaningful, recurring revenue, and... where the platform earns its keep.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "vendor-portal",
+      label: "Vendor Portal",
+      type: "system",
+      layer: "product",
+      phase: "phase-1",
+      reality: "planned",
+      description: "The business side of aaawoo, kept apart from the pet side. Vendors get a card with a portfolio and a deck; aaawoo is 'the venue, not the cashier' — it earns rent for presence, never a cut of sales.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/01_Phase-01/05_Vendor-Portal.md",
+      source_quote: "we are the venue, not the cashier.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: "One decision deliberately left open: whether vendors get user data beyond their own reviews (DPDP question)."
+    },
+    {
+      id: "microchip-movement",
+      label: "Microchip Movement",
+      type: "system",
+      layer: "product",
+      phase: "phase-1",
+      reality: "planned",
+      description: "The go-to-market wedge: how aaawoo earns its first verified users and vendors by riding a legal microchip mandate the government already created. A locked profile field routes every user to a vet; a dual packaging-scan makes the record verified.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/01_Phase-01/06_Microchip.md",
+      source_quote: "Not a marketing plan — a wedge. One thing, pushed loudly, that the law itself is already pushing for us.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "govt-partnership",
+      label: "Government Partnership",
+      type: "system",
+      layer: "product",
+      phase: "phase-1",
+      reality: "proposed",
+      description: "Positions aaawoo as civic data infrastructure (animal welfare, public safety). 'We are not here to ask for money' — only recognition, data access and a seat at the table. Five zero-cost asks of government.",
+      evidence: "proven",
+      confidence: 95,
+      source_file: "06_Editable-Sources/Markdown/01_Phase-01/07_Govt-Backing.md",
+      source_quote: "We are not here to ask for money. We are here to show you that what we are building will... deliver... a reliable, real-time, ward-level data system.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+
+    // ---------- PHASE-2 ----------
+    {
+      id: "pet-league",
+      label: "Pet League",
+      type: "system",
+      layer: "product",
+      phase: "phase-2",
+      reality: "planned",
+      description: "The apex of participation: a state-by-state, community-judged competition platform where the Pet Card, Events, Media and Microchipping converge. Deliberately a later phase. The platform's commercial apex (tiered sponsorship).",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/02_Phase-02/01_Pet-League.md",
+      source_quote: "Pet League is the apex of the whole platform — where the Pet Card, Events, Media, and Vet & Microchipping converge.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: "Sponsorship revenue is concentrated and lumpy; losing a Title sponsor for a state is a real hole."
+    },
+
+    // ---------- PET CARD FEATURES ----------
+    {
+      id: "f-live-verification",
+      label: "Live verification (no upload)",
+      type: "feature",
+      layer: "product",
+      phase: "phase-1",
+      reality: "planned",
+      description: "K1 keystone: the capture that proves a pet is real is done through aaawoo's own camera, live, at onboarding. No upload route, because uploads can be faked.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/01_Pet-Card_Features.md",
+      source_quote: "K1. Verification happens live, never by upload",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "f-no-delete",
+      label: "Card cannot be deleted / vet-lock",
+      type: "feature",
+      layer: "product",
+      phase: "phase-1",
+      reality: "planned",
+      description: "K2 keystone: once a card exists the user cannot destroy it; it transitions but never disappears. A vet microchipping or scanning hardens it into a locked state.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/01_Pet-Card_Features.md",
+      source_quote: "K2. A card cannot be deleted — and the vet-verified lock hardens it",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "f-deck-of-cards",
+      label: "Owner-attested vendor decks",
+      type: "feature",
+      layer: "product",
+      phase: "phase-1",
+      reality: "planned",
+      description: "K3 keystone (the deck-of-cards): the owner names which vendors are on a pet's card; once named, that card slots into the vendor's deck — an attested portfolio they did not write. How vendors get acquired without ad spend.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/01_Pet-Card_Features.md",
+      source_quote: "K3. Owner-attested vendor portfolios — the deck-of-cards",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "f-microchip-field",
+      label: "Microchip number + registry link",
+      type: "feature",
+      layer: "product",
+      phase: "phase-1",
+      reality: "planned",
+      description: "The pet's microchip number linked to its registry entry. A vet scanning/registering this chip through aaawoo triggers the vet-verified lock — the bridge to real-world identity.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/01_Pet-Card_Features.md",
+      source_quote: "C7. Microchip number + registry link... triggers the vet-verified lock.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "f-shared-card",
+      label: "One card, six equal family members",
+      type: "feature",
+      layer: "product",
+      phase: "phase-1",
+      reality: "planned",
+      description: "A Pet card is shared by up to six equal people; free for all on the card. Prevents duplicate accounts that a family would otherwise create.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/01_Pet-Card_Features.md",
+      source_quote: "G1. One card, shared by up to six equal people",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "f-onboarding-capture",
+      label: "Onboarding capture (scan + video)",
+      type: "feature",
+      layer: "product",
+      phase: "phase-1",
+      reality: "planned",
+      description: "Guided all-angles photo scan, close photos of marks/patterns, and a 30-second name-response video recorded live in-app — what makes an aaawoo pet a real, proven pet.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/01_Phase-01/01_Pet-Card.md",
+      source_quote: "30-second name-response video — A short video, recorded in the app, of the pet responding to its name. This proves a real, living animal.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+
+    // ---------- SOCIAL MEDIA FEATURES ----------
+    {
+      id: "f-proximity-feed",
+      label: "Proximity-aware feed",
+      type: "feature",
+      layer: "product",
+      phase: "phase-1",
+      reality: "planned",
+      description: "The centre of the social surface: distance is the primary ranking signal so the people and pets physically near you are most visible, by design. Engineering familiarity on purpose.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/02_Social-Media_Features.md",
+      source_quote: "03 The proximity-aware feed — CENTRE Distance is the primary ranking signal.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: "Honest weakness: nearness-first feed can feel empty in low-density areas on day one."
+    },
+    {
+      id: "f-pet-presence-rule",
+      label: "Pet-presence rule",
+      type: "feature",
+      layer: "product",
+      phase: "phase-1",
+      reality: "planned",
+      description: "Keystone: profiles stay roughly 75% pet / 25% human-with-pet. Gentle nudge first, firm hold past threshold. Vets exempt; trusted advocates earn their way off. Makes 'pet-first' structural, not a slogan.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/02_Social-Media_Features.md",
+      source_quote: "23 The pet-presence rule — KEYSTONE Profiles stay roughly 75% pet / 25% human-with-pet.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "f-cruelty-gate",
+      label: "Animal-cruelty gate",
+      type: "feature",
+      layer: "product",
+      phase: "phase-1",
+      reality: "planned",
+      description: "Graphic harm to an animal is blurred by default, gated behind explicit consent, never auto-played, never deleted by reflex — preserved as evidence, never weaponised as engagement.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/02_Social-Media_Features.md",
+      source_quote: "21 Animal-cruelty gate — SPINE Graphic harm to an animal is blurred, gated behind consent, never auto-played, never deleted by reflex.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "f-closed-audio",
+      label: "Closed audio model",
+      type: "feature",
+      layer: "product",
+      phase: "phase-1",
+      reality: "planned",
+      description: "Guardian's own voice preserved; detected outside/background music muted on ingest; an owned in-app library supplies cleared music. Removes a catastrophic copyright liability before it can exist.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/02_Social-Media_Features.md",
+      source_quote: "22 The closed audio model — SPINE Speech preserved; outside music muted on ingest.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "f-tales",
+      label: "Tales (short-form stories)",
+      type: "feature",
+      layer: "product",
+      phase: "phase-1",
+      reality: "planned",
+      description: "A short-form story surface (T-A-L-E-S, as in story) inside the same social surface under the same rules. Carries the lineage of the retired name 'Loyaltales'.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/02_Social-Media_Features.md",
+      source_quote: "29 Tales — short-form stories... the platform once carried the name Loyaltales.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+
+    // ---------- LOST & FOUND FEATURES ----------
+    {
+      id: "f-lf-bulletin",
+      label: "Lost-pet bulletin (auto-filled)",
+      type: "feature",
+      layer: "product",
+      phase: "phase-1",
+      reality: "planned",
+      description: "Marking a pet lost from its Pet Card auto-populates a bulletin (photo, attributes, microchip, last-seen) and re-renders the card into a Lost state. The owner does not fill a form.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/03_Lost-and-Found_Features.md",
+      source_quote: "02 Pre-filled lost case — SPINE Photo, attributes, microchip, last-seen auto-attached from the Pet Card.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "f-lf-gentle-resurfacing",
+      label: "Gentle periodic resurfacing (local)",
+      type: "feature",
+      layer: "product",
+      phase: "phase-1",
+      reality: "planned",
+      description: "Keystone: the bulletin is shown gently, periodically, and only locally — the rarity of lost pets makes it a signal not spam. Free in a 10km then 20km radius; the gentleness is the mechanism.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/03_Lost-and-Found_Features.md",
+      source_quote: "07 Gentle periodic resurfacing — KEYSTONE... the rarity is what makes it a signal, not noise.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "f-lf-reward-escrow",
+      label: "Reward escrow",
+      type: "feature",
+      layer: "financial",
+      phase: "phase-1",
+      reality: "planned",
+      description: "An optional reward held in aaawoo's escrow: 3% service fee; refunded if not found (platform keeps only the holding fee); 8% total take on payout to a finder. Never profits from a failed search.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/03_Lost-and-Found_Features.md",
+      source_quote: "17 Reward escrow — MONETISE Optional reward held safely; 3% service fee; refunded if not found; 8% take on payout.",
+      financial: { amount_inr: null, kind: "revenue", note: "3% holding fee / 8% take on payout" },
+      risk_note: ""
+    },
+
+    // ---------- EVENTS FEATURES ----------
+    {
+      id: "f-card-is-ticket",
+      label: "The Pet Card is the ticket",
+      type: "feature",
+      layer: "product",
+      phase: "phase-1",
+      reality: "planned",
+      description: "Tickets live on the attending pet's Pet Card, not a separate tab. Over a year this turns the Pet Card into the most-opened surface, aligning the monetising feature with the moat feature.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/01_Phase-01/04_Events-and-Ticketing.md",
+      source_quote: "Three — the Pet Card is the ticket. Tickets live on the attending pet's Pet Card.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "f-event-memory-seal",
+      label: "Event memory + vendor seal",
+      type: "feature",
+      layer: "product",
+      phase: "phase-1",
+      reality: "planned",
+      description: "On check-in a memory is auto-written to the Pet Card timeline and the organiser's own seal is stamped permanently — the one thing no general ticketing platform has.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/04_Events-and-Ticketing_Features.md",
+      source_quote: "17 Event memory auto-written... 18 Vendor-designed seal... official, collectible.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "f-event-visibility",
+      label: "Visibility packages (Events)",
+      type: "feature",
+      layer: "financial",
+      phase: "phase-1",
+      reality: "planned",
+      description: "The primary Phase-1 Events revenue lever: organisers pay for pet-attribute-qualified reach (Boost/Spotlight/Headline/Title). Scales with organiser ambition, not ticket volume.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/04_Events-and-Ticketing_Features.md",
+      source_quote: "31 Visibility packages — MONETISE... the primary Phase 1 revenue lever.",
+      financial: { amount_inr: null, kind: "revenue", note: "" },
+      risk_note: ""
+    },
+
+    // ---------- VENDOR FEATURES ----------
+    {
+      id: "f-vendor-card-deck",
+      label: "Vendor card + portfolio + deck",
+      type: "feature",
+      layer: "product",
+      phase: "phase-1",
+      reality: "planned",
+      description: "Each vendor gets a card mirroring the Pet Card, with a portfolio of work, multiple cards per entity (a deck), and specialty tags for meaningful discovery.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/05_Vendor-Portal_Features.md",
+      source_quote: "K3. The card with a portfolio and a deck",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "f-booking-rule",
+      label: "The booking rule",
+      type: "feature",
+      layer: "product",
+      phase: "phase-1",
+      reality: "planned",
+      description: "One branching question at signup — 'is there a booking?' — sorts every vendor into the right card type, pricing model, and advertising surface. Bookable = service provider; product-with-no-calendar = product vendor.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/05_Vendor-Portal_Features.md",
+      source_quote: "K2. The booking rule — one cut sorts every vendor",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "f-vendor-rent",
+      label: "Rent for presence (two pricing models)",
+      type: "feature",
+      layer: "financial",
+      phase: "phase-1",
+      reality: "planned",
+      description: "aaawoo earns rent for presence, never a cut of sales. Two models weighed equally: pure rent vs rent + a per-booking service charge on bookable vendors. Path A ~Rs 5,000/mo; Path B ~Rs 2,500/mo + 7% on facilitated bookings.",
+      evidence: "proven",
+      confidence: 95,
+      source_file: "06_Editable-Sources/Markdown/01_Phase-01/05_Vendor-Portal.md",
+      source_quote: "Two pricing models, weighed equally... Model one — whole vendor side on rent... Model two — a two-part split decided by the booking rule.",
+      financial: { amount_inr: null, kind: "revenue", note: "Path A Rs5,000/mo; Path B Rs2,500/mo + 7%" },
+      risk_note: ""
+    },
+
+    // ---------- PET LEAGUE FEATURES ----------
+    {
+      id: "f-community-panel",
+      label: "Community is the panel",
+      type: "feature",
+      layer: "product",
+      phase: "phase-2",
+      reality: "planned",
+      description: "Keystone: no judges, no expert panel, no aaawoo judging — the community votes and the vote is the verdict. Places aaawoo structurally outside every contested result, and is the not-gambling line.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/06_Pet-League_Features.md",
+      source_quote: "05 The community is the panel — KEYSTONE No judges, no expert panel, no aaawoo. The community votes; the vote is the verdict.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "f-integrity-protocol",
+      label: "Integrity capture protocol",
+      type: "feature",
+      layer: "product",
+      phase: "phase-2",
+      reality: "planned",
+      description: "Keystone: in-app performance capture with watermark, timestamp and anti-fraud so the community votes on a provably-real, unfaked pet. The single hardest engineering problem in the platform.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/06_Pet-League_Features.md",
+      source_quote: "06 The integrity capture protocol — KEYSTONE In-app capture with watermark, timestamp, anti-fraud.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: "Named as the single hardest engineering problem; must be flawless or legitimacy collapses."
+    },
+    {
+      id: "f-hall-of-fame",
+      label: "Hall of Fame (shared honour)",
+      type: "feature",
+      layer: "product",
+      phase: "phase-2",
+      reality: "planned",
+      description: "Keystone: a win is shared by the whole chain — pet, guardian, vendor and vet are each in the entry. The flywheel made into a trophy; the verified winning clip is stored inside the badge.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/06_Pet-League_Features.md",
+      source_quote: "11 Hall of Fame — KEYSTONE The whole chain is rewarded — pet, guardian, vendor, vet. The flywheel as a trophy.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "f-tiered-sponsorship",
+      label: "Tiered sponsorship",
+      type: "feature",
+      layer: "financial",
+      phase: "phase-2",
+      reality: "planned",
+      description: "Pet League's commercial engine: Title, Co and Associate sponsors per state per season fund prize pools held in compliant escrow. A sponsor pays for association with a stage aaawoo built — never a cut of sales.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/06_Pet-League_Features.md",
+      source_quote: "14 Tiered sponsorship — COMMERCE Title, Co, and Associate sponsors per state per season. The largest commercial mechanism on the platform.",
+      financial: { amount_inr: null, kind: "revenue", note: "Title ~Rs 9 lakh/competition (indicative)" },
+      risk_note: ""
+    },
+    {
+      id: "f-physical-recognition",
+      label: "Physical recognition (shields & cards)",
+      type: "feature",
+      layer: "product",
+      phase: "phase-2",
+      reality: "planned",
+      description: "Earned-only physical artifacts: shields for the top 10 + team + sponsors (~Rs 4,500 each), collectible cards-in-box for ranks 11-100 (~Rs 600 each). Never bought, only won.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/01_Build-Order-and-Revenue.md",
+      source_quote: "Shield tier... Rs ~4,500 per shield... Card-in-box tier... Rs ~600 per box.",
+      financial: { amount_inr: null, kind: "cost", note: "~Rs 0.80 cr 5-yr cumulative across 13-state rollout" },
+      risk_note: ""
+    },
+
+    // ---------- PEOPLE / OWNERS ----------
+    {
+      id: "owner-gautam",
+      label: "Gautam Purushotham (CEO)",
+      type: "owner",
+      layer: "team",
+      phase: "company",
+      reality: "current",
+      description: "Co-founder & CEO; Founder & Creative-Product Lead. Creative technologist, partner at Studio Rift, 10+ years in film/animation/real-time graphics. Carries creative direction, product vision, investor relations.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/00_Read-First/02_The-Team.md",
+      source_quote: "Gautam Purushotham — Co-Founder & CEO · Founder & Creative–Product Lead",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "owner-bhanu",
+      label: "Bhanu Khandelwal (CFO)",
+      type: "owner",
+      layer: "team",
+      phase: "company",
+      reality: "current",
+      description: "Co-founder & CFO; Head of Finance and Operations. Partner at Studio Rift; financial discipline; moves to investor relations in Year 2. Owns the unit-economics decisions.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/00_Read-First/02_The-Team.md",
+      source_quote: "Bhanu Khandelwal — Co-Founder & CFO · Head of Finance and Operations",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "owner-deepak",
+      label: "Deepak Kumar (Head of Engineering)",
+      type: "owner",
+      layer: "team",
+      phase: "company",
+      reality: "current",
+      description: "Head of Engineering & Platform Architecture. 12+ years in high-scale FinTech/enterprise platforms; owns architecture and manages the external dev company.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/00_Read-First/02_The-Team.md",
+      source_quote: "Deepak Kumar — Head of Engineering & Platform Architecture",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "owner-karthikeyan",
+      label: "Karthikeyan D (Head of Design)",
+      type: "owner",
+      layer: "team",
+      phase: "company",
+      reality: "current",
+      description: "Head of Design & Technical Art. 13+ years across gaming, AR/VR, film, real-time interactive systems; BAFTA Ones-to-Watch recipient. App design never goes out of house.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/00_Read-First/02_The-Team.md",
+      source_quote: "Karthikeyan D — Head of Design & Technical Art",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "owner-aathyish",
+      label: "Aathyish Naveenan (Lead UX)",
+      type: "owner",
+      layer: "team",
+      phase: "company",
+      reality: "current",
+      description: "Lead UX Designer; 14+ years shaping interaction and product layers of consumer-facing platforms. Keeps the multi-stakeholder experience layer coherent at scale.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/00_Read-First/02_The-Team.md",
+      source_quote: "Aathyish Naveenan — Lead UX Designer",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "owner-shivakumar",
+      label: "Shivakumar Mangloor (Head of Growth)",
+      type: "owner",
+      layer: "team",
+      phase: "company",
+      reality: "current",
+      description: "Head of Growth & Marketplace Operations (joins Month 6). Merchant-adoption and funnel experience from PhonePe and Swiggy. Owns vendor onboarding.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/00_Read-First/02_The-Team.md",
+      source_quote: "Shivakumar Mangloor — Head of Growth & Marketplace Operations (joins Month 6).",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "owner-kaveri",
+      label: "Dr. Kaveri M. Jambagi (Chief Advisor, Vet)",
+      type: "owner",
+      layer: "team",
+      phase: "company",
+      reality: "current",
+      description: "Chief Advisor, Veterinary Medicine & Welfare (from Month 6). PhD in Vet Medicine; keeps every health/welfare decision clinically sound and compliant.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/00_Read-First/02_The-Team.md",
+      source_quote: "Dr. Kaveri M. Jambagi — Chief Advisor · Veterinary Medicine & Welfare",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "owner-bijit",
+      label: "Bijit Das (Media & Licensing)",
+      type: "owner",
+      layer: "team",
+      phase: "company",
+      reality: "current",
+      description: "Media & Licensing. Music producer/creative collaborator who owns the media and licensing layer; has worked with Studio Rift on scoring and sound design.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/00_Read-First/02_The-Team.md",
+      source_quote: "Bijit Das — Media & Licensing",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "owner-studio-rift",
+      label: "Studio Rift (creative studio)",
+      type: "owner",
+      layer: "team",
+      phase: "company",
+      reality: "current",
+      description: "Long-term outsourced creative studio running the mascot production pipeline (7 characters over 3 years, daily news, service films). Led by a senior animation/AI specialist in London; both founders are partners.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "aaawoo_Master-Context.md",
+      source_quote: "Studio Rift — long-term outsourced creative studio; the mascot production pipeline (7 characters over 3 years...). Led by a senior animation/AI specialist in London.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "owner-design-pr-agency",
+      label: "Design + PR agency (outsourced)",
+      type: "owner",
+      layer: "team",
+      phase: "company",
+      reality: "current",
+      description: "Outsourced agency owning brand identity and all marketing placement.",
+      evidence: "proven",
+      confidence: 95,
+      source_file: "aaawoo_Master-Context.md",
+      source_quote: "Design + PR agency (outsourced) — brand identity and all marketing placement.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "owner-external-dev",
+      label: "External dev company (outsourced)",
+      type: "owner",
+      layer: "team",
+      phase: "company",
+      reality: "current",
+      description: "The external development company that builds the platform, managed by the Head of Engineering. App design itself never goes out of house.",
+      evidence: "strongly_supported",
+      confidence: 85,
+      source_file: "aaawoo_Master-Context.md",
+      source_quote: "Deepak Kumar — Head of Engineering. Owns architecture; manages the external dev company.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+
+    // ---------- COST BLOCKS ----------
+    {
+      id: "cost-total",
+      label: "Production cost (3-year) Rs 25.23 Cr",
+      type: "cost",
+      layer: "financial",
+      phase: "company",
+      reality: "planned",
+      description: "The full 3-year production cost, all five blocks locked. Updated 30 May 2026 from the superseded Rs 24.60 Cr figure. Year split now reconciles: 6.27 / 9.01 / 9.95 = 25.23 Cr.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "aaawoo_Master-Context.md",
+      source_quote: "GRAND TOTAL Rs 6.27 Cr Rs 9.01 Cr Rs 9.95 Cr Rs 25.23 Cr",
+      financial: { amount_inr: 252300000, kind: "cost", note: "Rs 25.23 Cr total" },
+      risk_note: ""
+    },
+    {
+      id: "cost-team",
+      label: "Block 1 — Team Rs 8.84 Cr",
+      type: "cost",
+      layer: "financial",
+      phase: "company",
+      reality: "planned",
+      description: "Team cost block, 35.0% of production cost — the largest block. Rose from 8.21 to 8.84 Cr (design-pod restructure: UI Artist #1 across 3 yrs + UI Artist #2 in Y2, +14% statutory overhead). People are one of the two true recurring costs.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "aaawoo_Master-Context.md",
+      source_quote: "BLOCK 1 — TEAM TOTAL Rs 2.27 Cr Rs 3.15 Cr Rs 3.42 Cr Rs 8.84 Cr",
+      financial: { amount_inr: 88400000, kind: "cost", note: "Rs 8.84 Cr (35.0%)" },
+      risk_note: ""
+    },
+    {
+      id: "cost-development",
+      label: "Block 2 — Development Rs 5.60 Cr",
+      type: "cost",
+      layer: "financial",
+      phase: "company",
+      reality: "planned",
+      description: "Development cost block, 22.2% of production cost.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "aaawoo_Master-Context.md",
+      source_quote: "Block 2 Development Rs 5.60 Cr (22.2%)",
+      financial: { amount_inr: 56000000, kind: "cost", note: "Rs 5.60 Cr (22.2%)" },
+      risk_note: ""
+    },
+    {
+      id: "cost-marketing",
+      label: "Block 5 — Marketing Rs 6.62 Cr",
+      type: "cost",
+      layer: "financial",
+      phase: "company",
+      reality: "planned",
+      description: "Marketing cost block, 26.2% of production cost.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "aaawoo_Master-Context.md",
+      source_quote: "Block 5 Marketing Rs 6.62 Cr (26.2%)",
+      financial: { amount_inr: 66200000, kind: "cost", note: "Rs 6.62 Cr (26.2%)" },
+      risk_note: ""
+    },
+    {
+      id: "cost-services",
+      label: "Block 3 — Services Rs 2.48 Cr",
+      type: "cost",
+      layer: "financial",
+      phase: "company",
+      reality: "planned",
+      description: "Services cost block, 10% of production cost. Storage is one of the two true recurring costs.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "aaawoo_Master-Context.md",
+      source_quote: "Block 3 Services Rs 2.48 Cr (9.8%)",
+      financial: { amount_inr: 24800000, kind: "cost", note: "Rs 2.48 Cr (9.8%)" },
+      risk_note: ""
+    },
+    {
+      id: "cost-office",
+      label: "Block 4 — Office Rs 1.69 Cr",
+      type: "cost",
+      layer: "financial",
+      phase: "company",
+      reality: "planned",
+      description: "Office cost block, 7% of production cost — the smallest block.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "aaawoo_Master-Context.md",
+      source_quote: "Block 4 Office Rs 1.69 Cr (6.7%)",
+      financial: { amount_inr: 16900000, kind: "cost", note: "Rs 1.69 Cr (6.7%)" },
+      risk_note: ""
+    },
+    {
+      id: "cost-marketing-seed",
+      label: "Launch user-seed Rs 20 lakh",
+      type: "cost",
+      layer: "financial",
+      phase: "phase-1",
+      reality: "planned",
+      description: "Real cash spent at launch (Year 1) to seed the home-state user base. After this, the wedge takes over; ongoing Y2-Y5 marketing is sized but not yet quantified.",
+      evidence: "proven",
+      confidence: 95,
+      source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/01_Build-Order-and-Revenue.md",
+      source_quote: "Rs 20 lakh at launch (Y1) for initial home-state user seed",
+      financial: { amount_inr: 2000000, kind: "cost", note: "Rs 20 lakh launch seed" },
+      risk_note: ""
+    },
+
+    // ---------- REVENUE STREAMS ----------
+    {
+      id: "rev-conservative-total",
+      label: "Conservative revenue total ~Rs 52.39 Cr",
+      type: "revenue",
+      layer: "financial",
+      phase: "company",
+      reality: "planned",
+      description: "5-year cumulative conservative total (Events + Microchipping + Pet League) — the figure the founders are willing to defend in a room. Combined indicative range with predictions is ~Rs 61.98–67.21 Cr.",
+      evidence: "strongly_supported",
+      confidence: 85,
+      source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/01_Build-Order-and-Revenue.md",
+      source_quote: "Conservative Total (Events + Microchipping + Pet League)... ~52.39",
+      financial: { amount_inr: 523900000, kind: "revenue", note: "~Rs 52.39 Cr 5-yr; combined ~61.98-67.21 Cr" },
+      risk_note: "Indicative figures; only Events/Microchip base/Pet League structure are defended as conservative."
+    },
+    {
+      id: "rev-events",
+      label: "Events ticketing revenue",
+      type: "revenue",
+      layer: "financial",
+      phase: "phase-1",
+      reality: "planned",
+      description: "A small take-rate (~7%) on paid tickets plus organiser visibility spend. The cheapest, intent-led door; modest by design (~Rs 5.31-7.78 lakh/yr single state).",
+      evidence: "proven",
+      confidence: 95,
+      source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/01_Build-Order-and-Revenue.md",
+      source_quote: "the model takes a small illustrative slice of tickets at real, paid pet events — in the order of 7%.",
+      financial: { amount_inr: null, kind: "revenue", note: "~7% take-rate; ~Rs 5.31-7.78L/yr single state" },
+      risk_note: ""
+    },
+    {
+      id: "rev-microchip",
+      label: "Microchipping platform share",
+      type: "revenue",
+      layer: "financial",
+      phase: "phase-1",
+      reality: "planned",
+      description: "An illustrative 10% platform share of the vet's microchip price (~Rs 2,500). Single-state 5-yr totals Rs 0.74-1.85 Cr by price. The money is a bonus; the verified user is the real win.",
+      evidence: "proven",
+      confidence: 90,
+      source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/01_Build-Order-and-Revenue.md",
+      source_quote: "The model takes an illustrative 10% platform share.",
+      financial: { amount_inr: null, kind: "revenue", note: "10% share; Rs 0.74-1.85 Cr single-state 5-yr" },
+      risk_note: ""
+    },
+    {
+      id: "rev-vendor-band",
+      label: "Vendor rent revenue (prediction)",
+      type: "revenue",
+      layer: "financial",
+      phase: "phase-1",
+      reality: "proposed",
+      description: "Recurring vendor rent + booking fees, presented as a prediction band Rs 8.72-11.40 Cr (5-yr) kept outside the conservative total because inputs are not yet measured.",
+      evidence: "inferred",
+      confidence: 70,
+      source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/01_Build-Order-and-Revenue.md",
+      source_quote: "Vendor band (prediction)... 8.72 – 11.40",
+      financial: { amount_inr: null, kind: "revenue", note: "Rs 8.72-11.40 Cr 5-yr prediction band" },
+      risk_note: "Rests on four unmeasured inputs; deliberately not folded into the headline."
+    },
+    {
+      id: "rev-pet-league",
+      label: "Pet League sponsorship revenue",
+      type: "revenue",
+      layer: "financial",
+      phase: "phase-2",
+      reality: "planned",
+      description: "Tiered sponsorship of a stage aaawoo built; the headline driver. ~Rs 51.55 Cr 5-yr cumulative net (cold-start-respected, awards-included, 13-state rollout). Money flows from Phase 2.",
+      evidence: "strongly_supported",
+      confidence: 80,
+      source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/01_Build-Order-and-Revenue.md",
+      source_quote: "Five-year cumulative Pet League net (rollout, post-awards): ~Rs 51.55 cr.",
+      financial: { amount_inr: 515500000, kind: "revenue", note: "~Rs 51.55 Cr 5-yr net" },
+      risk_note: "Sponsorship is lumpy; losing a Title sponsor is a real hole."
+    },
+    {
+      id: "rev-visibility",
+      label: "Visibility-boost revenue (prediction)",
+      type: "revenue",
+      layer: "financial",
+      phase: "phase-1",
+      reality: "proposed",
+      description: "The only place users pay aaawoo directly: time-bounded boost slots (~Rs 250/hr). Aggressively conservative prediction band Rs 0.87-3.42 Cr (5-yr), outside the conservative total.",
+      evidence: "inferred",
+      confidence: 70,
+      source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/01_Build-Order-and-Revenue.md",
+      source_quote: "Visibility band (prediction)... 0.87 – 3.42",
+      financial: { amount_inr: null, kind: "revenue", note: "Rs 0.87-3.42 Cr 5-yr prediction" },
+      risk_note: ""
+    },
+
+    // ---------- MARKET / SIGNALS ----------
+    {
+      id: "mkt-size",
+      label: "India pet market size estimate",
+      type: "market",
+      layer: "market",
+      phase: "company",
+      reality: "current",
+      description: "Market-size estimates for 2024 range INR 5,800 cr to 72,000 cr — a wide band the founders treat as directional, noting the true market is likely larger than the top estimate.",
+      evidence: "proven",
+      confidence: 90,
+      source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/02_Market-Analysis.md",
+      source_quote: "Market size estimates range from INR 5,800 crore to INR 72,000 crore for the same year.",
+      financial: { amount_inr: null, kind: null, note: "INR 5,800 cr - 72,000 cr (2024)" },
+      risk_note: "Numbers are uncertain by the doc's own admission; use as directional signal."
+    },
+    {
+      id: "mkt-owned-pets",
+      label: "Owned-pet estimate (2024)",
+      type: "market",
+      layer: "market",
+      phase: "company",
+      reality: "current",
+      description: "Owned-pet estimates for 2024 range 3.1–4.2 crore from credible sources; ~38M urban pets cited, 70% first-time owners. 85% of companion animals have no record or identity.",
+      evidence: "proven",
+      confidence: 90,
+      source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/02_Market-Analysis.md",
+      source_quote: "Estimates for owned pets in 2024 range from 3.1 crore to 4.2 crore.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: "Wide range is itself evidence no counting infrastructure exists."
+    },
+    {
+      id: "mkt-chennai-mandate",
+      label: "Chennai microchip mandate signal",
+      type: "market",
+      layer: "market",
+      phase: "company",
+      reality: "current",
+      description: "Greater Chennai Corporation made microchipping mandatory; by Dec 2025 issued 73,754 licences and chipped 70,000+ dogs, yet only ~31% compliance — demand the law created and official tooling cannot convert.",
+      evidence: "proven",
+      confidence: 95,
+      source_file: "06_Editable-Sources/Markdown/01_Phase-01/06_Microchip.md",
+      source_quote: "the GCC had issued 73,754 pet licences and embedded microchips in over 70,000 registered dogs.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: "Municipal mandate (dogs & cats, city limits) under legal challenge — not a state/national law."
+    },
+    {
+      id: "mkt-rabies-crisis",
+      label: "Rabies / dog-bite crisis signal",
+      type: "market",
+      layer: "market",
+      phase: "company",
+      reality: "current",
+      description: "~19,000 rabies deaths/yr, 37 lakh+ reported dog bites in 2024, India 36% of global rabies deaths, no real-time tracking system — the civic crisis the platform's data layer addresses.",
+      evidence: "proven",
+      confidence: 90,
+      source_file: "06_Editable-Sources/Markdown/01_Phase-01/07_Govt-Backing.md",
+      source_quote: "19,000 Rabies deaths in India every year... 37 Lakh+ Dog bite cases reported in 2024 alone.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: "Bite-statistic inflation is contested (see Babber RTI claim)."
+    },
+    {
+      id: "mkt-segment-pet-parents",
+      label: "Segment: pet parents (users)",
+      type: "market",
+      layer: "market",
+      phase: "company",
+      reality: "current",
+      description: "The primary audience and the only one marketing spend targets. The app is free for them; the business monetises layers around them.",
+      evidence: "proven",
+      confidence: 95,
+      source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/04_Marketing-Strategy.md",
+      source_quote: "Users — our main focus (this is where the spending goes): the pet parents are the demand.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "mkt-segment-vets",
+      label: "Segment: vets",
+      type: "market",
+      layer: "market",
+      phase: "company",
+      reality: "current",
+      description: "A priority audience pulled in, never advertised at — user demand for microchipping walks into clinics. Vets are central to the microchip loop, the Card system and Phase-2 recovery.",
+      evidence: "proven",
+      confidence: 95,
+      source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/04_Marketing-Strategy.md",
+      source_quote: "Vets — a priority, but pulled in, not advertised at.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "mkt-segment-vendors",
+      label: "Segment: vendors",
+      type: "market",
+      layer: "market",
+      phase: "company",
+      reality: "current",
+      description: "A deliberate byproduct, never a spend target — they come because users are here. Addressable universe ~16,000-55,000+ entities; Phase-1 realistic target 500-1,500 partners.",
+      evidence: "proven",
+      confidence: 90,
+      source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/03_Customer-Landscape.md",
+      source_quote: "Total addressable universe: roughly 16,000 – 55,000+ potential partner entities in India.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+
+    // ---------- NAMED PARTNER / CLIENT COMPANIES ----------
+    {
+      id: "client-mars",
+      label: "Mars Petcare India",
+      type: "client",
+      layer: "market",
+      phase: "company",
+      reality: "current",
+      description: "Named food/treats partner (Pedigree, Whiskas, Sheba, IAMS). Indicative annual marketing capacity Rs 75-250 Cr — the largest in the partner landscape.",
+      evidence: "proven",
+      confidence: 90,
+      source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/03_Customer-Landscape.md",
+      source_quote: "Mars Petcare India... Rs 75-250 Cr",
+      financial: { amount_inr: null, kind: null, note: "Rs 75-250 Cr indicative capacity" },
+      risk_note: "Marketing capacity is an estimate, not disclosed spend."
+    },
+    {
+      id: "client-huft",
+      label: "Heads Up For Tails (HUFT)",
+      type: "client",
+      layer: "market",
+      phase: "company",
+      reality: "current",
+      description: "Named omnichannel retail/grooming partner. Indicative marketing capacity Rs 25-80 Cr. Also a Series-B-funded competitor in product space.",
+      evidence: "proven",
+      confidence: 90,
+      source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/03_Customer-Landscape.md",
+      source_quote: "Heads Up For Tails... Rs 25-80 Cr",
+      financial: { amount_inr: null, kind: null, note: "Rs 25-80 Cr indicative capacity" },
+      risk_note: ""
+    },
+    {
+      id: "client-supertails",
+      label: "Supertails",
+      type: "client",
+      layer: "market",
+      phase: "company",
+      reality: "current",
+      description: "Named e-commerce/vet/pharmacy partner (Rs 10-35 Cr capacity). Also a Series-B competitor: product-first, thin on identity.",
+      evidence: "proven",
+      confidence: 90,
+      source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/03_Customer-Landscape.md",
+      source_quote: "Supertails... E-commerce, vet, pharmacy, training... Rs 10-35 Cr",
+      financial: { amount_inr: null, kind: null, note: "Rs 10-35 Cr indicative capacity" },
+      risk_note: ""
+    },
+    {
+      id: "client-vetic",
+      label: "Vetic",
+      type: "client",
+      layer: "market",
+      phase: "company",
+      reality: "current",
+      description: "Named vet clinic chain partner (Rs 8-30 Cr capacity) central to microchipping/health records. Also a funded competitor with no consumer identity layer.",
+      evidence: "proven",
+      confidence: 90,
+      source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/03_Customer-Landscape.md",
+      source_quote: "Vetic... Vet clinic chain... Rs 8-30 Cr",
+      financial: { amount_inr: null, kind: null, note: "Rs 8-30 Cr indicative capacity" },
+      risk_note: ""
+    },
+    {
+      id: "client-drools",
+      label: "Drools Pet Food",
+      type: "client",
+      layer: "market",
+      phase: "company",
+      reality: "current",
+      description: "Named Indian mass-premium food partner (Rs 70-180 Cr capacity). Drools/Pedigree also cited as large-cap FMCG with no digital relationship.",
+      evidence: "proven",
+      confidence: 90,
+      source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/03_Customer-Landscape.md",
+      source_quote: "Drools Pet Food... Rs 70-180 Cr",
+      financial: { amount_inr: null, kind: null, note: "Rs 70-180 Cr indicative capacity" },
+      risk_note: ""
+    },
+    {
+      id: "client-pet-fed",
+      label: "Pet Fed (events)",
+      type: "client",
+      layer: "market",
+      phase: "company",
+      reality: "current",
+      description: "Named pet-events/activations partner (Rs 50L-4 Cr capacity) — event sponsorship and community density, relevant to Pet League sponsorship.",
+      evidence: "proven",
+      confidence: 85,
+      source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/03_Customer-Landscape.md",
+      source_quote: "Pet Fed... Pet events and activations... Rs 50 L-4 Cr",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+
+    // ---------- COMPETITORS ----------
+    {
+      id: "comp-happy-pet",
+      label: "Happy Pet (competitor)",
+      type: "competitor",
+      layer: "market",
+      phase: "company",
+      reality: "current",
+      description: "Bengaluru pet-tech (founded Jan 2024, Anil Reddy; Dr Devi Shetty investment). End-to-end ecosystem ambition, but tested as a form-like Pet Card, a self-typed unverified microchip field, national breed groups (no proximity), and no social layer. Approaches the problem through the human.",
+      evidence: "proven",
+      confidence: 90,
+      source_file: "05_Brand-and-Social/Competitor-Brief.md",
+      source_quote: "A 'Pet Card' that behaves like a form... A self-typed, unverified microchip number.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "comp-mbf",
+      label: "Project MBF / Sankshay Babber",
+      type: "competitor",
+      layer: "market",
+      phase: "company",
+      reality: "current",
+      description: "A top-down, state-facing 'Man's Best Friend' governance mission (microchipping, vaccination, a ~Rs 15,000 cr regulated canine economy) coordinated through a municipal/feeder app. Approaches the problem through the state; the pet is a row.",
+      evidence: "proven",
+      confidence: 90,
+      source_file: "05_Brand-and-Social/Competitor-Brief.md",
+      source_quote: "MBF is built top-down, for the state. Its user is a municipality or a feeder.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: "Babber also publicly claims dog-bite figures are inflated (RTI) — a position to be ready to address."
+    },
+    {
+      id: "comp-petkonnect",
+      label: "PetKonnect (competitor)",
+      type: "competitor",
+      layer: "market",
+      phase: "company",
+      reality: "current",
+      description: "Early-stage community + profiles player named in the market analysis; gap is no microchip anchor and low scale.",
+      evidence: "proven",
+      confidence: 85,
+      source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/02_Market-Analysis.md",
+      source_quote: "PetKonnect... Focus: Community + profiles... Gap: No microchip anchor, low scale.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+
+    // ---------- RISKS ----------
+    {
+      id: "risk-year-split",
+      label: "Budget year-split discrepancy (RESOLVED)",
+      type: "risk",
+      layer: "risk",
+      phase: "company",
+      reality: "current",
+      description: "RESOLVED 30 May 2026. The old 24.60 Cr doc had inconsistent per-year columns. The current Production Cost (25.23 Cr) reconciles cleanly: 6.27 / 9.01 / 9.95 = 25.23 Cr. Kept for history.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "aaawoo_Master-Context.md",
+      source_quote: "page 2 says 6.26 / 8.64 / 9.71 Cr; the final page says 6.09 / 8.30 / 9.83 Cr... the final-page row doesn't sum to 24.60.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: "Resolved — superseded by the 25.23 Cr cost update."
+    },
+    {
+      id: "risk-lostfound-limits",
+      label: "Lost & Found honest limitation",
+      type: "risk",
+      layer: "risk",
+      phase: "phase-1",
+      reality: "current",
+      description: "Lost & Found deliberately does not promise to find a pet and detains its longer technical horizon. It is built but no longer counted in any earning total. Overbuilding is named as the clearest risk.",
+      evidence: "proven",
+      confidence: 95,
+      source_file: "06_Editable-Sources/Markdown/01_Phase-01/03_Lost-and-Found.md",
+      source_quote: "The clearest risk we carry is overbuilding, and this service is where the temptation is strongest.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "risk-market-uncertainty",
+      label: "Market-number uncertainty",
+      type: "risk",
+      layer: "risk",
+      phase: "company",
+      reality: "current",
+      description: "India cannot state its exact pet numbers; owned-pet and market-size estimates vary several-fold. Figures must be treated as directional, not exact.",
+      evidence: "proven",
+      confidence: 95,
+      source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/02_Market-Analysis.md",
+      source_quote: "We do not know exactly how many pets India has. And neither does anyone else.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "risk-loyal-tales-naming",
+      label: "Loyal Tales legacy naming",
+      type: "risk",
+      layer: "risk",
+      phase: "company",
+      reality: "current",
+      description: "Earlier names Loyal Tales and Petstorie are retired; the old 'Loyal Tales' name still appears in archived/legal docs. Rule: always 'aaawoo', never 'Petstorie'.",
+      evidence: "proven",
+      confidence: 95,
+      source_file: "aaawoo_Master-Context.md",
+      source_quote: "the old “Loyal Tales” name still appears in archived docs.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "risk-registered-office",
+      label: "Registered-office inconsistency",
+      type: "risk",
+      layer: "risk",
+      phase: "company",
+      reality: "current",
+      description: "An open legal flag: the registered-office address isn't consistent across incorporation documents.",
+      evidence: "proven",
+      confidence: 95,
+      source_file: "aaawoo_Master-Context.md",
+      source_quote: "the registered-office address isn't consistent across documents.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "risk-league-overbuild",
+      label: "Pet League overbuild / sponsor concentration",
+      type: "risk",
+      layer: "risk",
+      phase: "phase-2",
+      reality: "current",
+      description: "Launching Pet League early is the single most overbuild-prone move; its integrity protocol is the hardest engineering problem. Sponsorship revenue is lumpy — losing a state's Title sponsor is a real hole.",
+      evidence: "proven",
+      confidence: 95,
+      source_file: "06_Editable-Sources/Markdown/02_Phase-02/01_Pet-League.md",
+      source_quote: "Launching it early would be the single most overbuild-prone move available to this company.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "risk-reveal-timing",
+      label: "Reveal-timing risk (marketing)",
+      type: "risk",
+      layer: "risk",
+      phase: "phase-2",
+      reality: "current",
+      description: "The Pet League reveal must happen only when enough verified pets exist — decided by readiness, not a date. Named as the single biggest risk in the marketing plan.",
+      evidence: "proven",
+      confidence: 90,
+      source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/04_Marketing-Strategy.md",
+      source_quote: "This is the single biggest risk in the whole plan, and we name it on purpose.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "risk-vendor-data-dpdp",
+      label: "Vendor user-data / DPDP open decision",
+      type: "risk",
+      layer: "risk",
+      phase: "phase-1",
+      reality: "current",
+      description: "Whether vendors get any user data beyond their own reviews and aggregate performance is a privacy/DPDP/trust question deliberately parked for both founders to decide, not drafted casually.",
+      evidence: "proven",
+      confidence: 95,
+      source_file: "06_Editable-Sources/Markdown/01_Phase-01/05_Vendor-Portal.md",
+      source_quote: "is a privacy, trust and DPDP question, not a scope line. It is parked deliberately for both founders to decide.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+
+    // ---------- STANDARDS / RULES ----------
+    {
+      id: "std-md-source-of-truth",
+      label: "Rule: .md is source of truth",
+      type: "standard",
+      layer: "standard",
+      phase: "company",
+      reality: "current",
+      description: "The .md files in 06_Editable-Sources/Markdown are the source of truth: edit the markdown first, then export the PDF.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "aaawoo_Master-Context.md",
+      source_quote: "Source of truth = the .md files in 06_Editable-Sources\\Markdown. Edit the markdown first, then export the PDF.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "std-never-invent-figure",
+      label: "Rule: never invent a figure",
+      type: "standard",
+      layer: "standard",
+      phase: "company",
+      reality: "current",
+      description: "Never invent a figure — ground it in the source, recompute, and flag anything off as 'mistake or intended?'.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "aaawoo_Master-Context.md",
+      source_quote: "Never invent a figure. Ground it in the source, recompute, and flag anything off as “mistake or intended?”.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "std-mascots-lead",
+      label: "Rule: mascots lead, company stays back",
+      type: "standard",
+      layer: "standard",
+      phase: "company",
+      reality: "current",
+      description: "Brand architecture rule: aaawoo doesn't lead with its name, founders or features — it leads with the mascot universe; the company sits back.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "aaawoo_Master-Context.md",
+      source_quote: "the company sits back, the mascots do the talking.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "std-paired-design",
+      label: "Rule: paired design (serve + earn)",
+      type: "standard",
+      layer: "standard",
+      phase: "company",
+      reality: "current",
+      description: "Every phase pairs something that serves the community with something that earns the company — free where need is highest, paid where intent is clearest. The earning hand can never corrupt the serving hand.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/01_Phase-01/02_Social-Media.md",
+      source_quote: "Every phase pairs something that serves the community with something that earns the company.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "std-rent-not-rake",
+      label: "Rule: rent for presence, never a cut of sales",
+      type: "standard",
+      layer: "standard",
+      phase: "company",
+      reality: "current",
+      description: "aaawoo is the venue, not the cashier: it charges rent for presence and never takes a cut of a vendor's own sales. Events ticket take-rate and microchip share are distinct mechanisms.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "06_Editable-Sources/Markdown/01_Phase-01/05_Vendor-Portal.md",
+      source_quote: "We earn from listing and promotion, not a cut of anyone’s sales. We are the venue, not the cashier.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+    {
+      id: "std-founder-voice",
+      label: "Rule: first-person founder voice",
+      type: "standard",
+      layer: "standard",
+      phase: "company",
+      reality: "current",
+      description: "Voice rule: first person, founder voice (we / the two of us), warm, plain-spoken, honest — never corporate or third-person.",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "aaawoo_Master-Context.md",
+      source_quote: "Voice: first person, founder voice (we / the two of us), warm, plain-spoken, honest — never corporate or third-person.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    },
+
+    // ---------- MILESTONE ----------
+    {
+      id: "milestone-launch",
+      label: "Launch — Month 11",
+      type: "milestone",
+      layer: "financial",
+      phase: "phase-1",
+      reality: "planned",
+      description: "Consumer app + vendor portal live at Month 11. Build: ~3.5 months design → 6 months Phase-1 dev → 1.5 months testing. Money genuinely starts flowing Year 2 Month 8 (Pet League in Bangalore).",
+      evidence: "proven",
+      confidence: 100,
+      source_file: "aaawoo_Master-Context.md",
+      source_quote: "Launch: Month 11 (consumer app + vendor portal live). Build: ~3.5 months design → 6 months Phase-1 dev → 1.5 months testing.",
+      financial: { amount_inr: null, kind: null, note: "" },
+      risk_note: ""
+    }
+  ],
+
+  edges: [
+    // platform / company structure
+    { id: "e-aaawoo-embur-part_of", source: "aaawoo", target: "embur-forge", rel: "part_of", description: "aaawoo is the product of EMBUR FORGE Pvt Ltd.", evidence: "proven", confidence: 100, source_file: "aaawoo_Master-Context.md" },
+    { id: "e-mascot-aaawoo-part_of", source: "mascot-universe", target: "aaawoo", rel: "part_of", description: "The Mascot Universe is aaawoo's brand layer.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/01_Phase-01/08_Mascot-Universe.md" },
+    { id: "e-mascot-std-governed", source: "mascot-universe", target: "std-mascots-lead", rel: "governed_by", description: "The mascot universe is governed by the mascots-lead brand rule.", evidence: "proven", confidence: 100, source_file: "aaawoo_Master-Context.md" },
+
+    // products part_of platform
+    { id: "e-petcard-aaawoo", source: "pet-card", target: "aaawoo", rel: "part_of", description: "Pet Card is a Phase-1 product and the spine of aaawoo.", evidence: "proven", confidence: 100, source_file: "aaawoo_Master-Context.md" },
+    { id: "e-social-aaawoo", source: "social-media", target: "aaawoo", rel: "part_of", description: "Media is a Phase-1 product of aaawoo.", evidence: "proven", confidence: 100, source_file: "aaawoo_Master-Context.md" },
+    { id: "e-lf-aaawoo", source: "lost-and-found", target: "aaawoo", rel: "part_of", description: "Lost & Found is a Phase-1 product of aaawoo.", evidence: "proven", confidence: 100, source_file: "aaawoo_Master-Context.md" },
+    { id: "e-events-aaawoo", source: "events-ticketing", target: "aaawoo", rel: "part_of", description: "Events & Ticketing is a Phase-1 product of aaawoo.", evidence: "proven", confidence: 100, source_file: "aaawoo_Master-Context.md" },
+    { id: "e-vendor-aaawoo", source: "vendor-portal", target: "aaawoo", rel: "part_of", description: "Vendor Portal is a Phase-1 product of aaawoo.", evidence: "proven", confidence: 100, source_file: "aaawoo_Master-Context.md" },
+    { id: "e-microchip-aaawoo", source: "microchip-movement", target: "aaawoo", rel: "part_of", description: "Microchip Movement is a Phase-1 product of aaawoo.", evidence: "proven", confidence: 100, source_file: "aaawoo_Master-Context.md" },
+    { id: "e-govt-aaawoo", source: "govt-partnership", target: "aaawoo", rel: "part_of", description: "Government Partnership positions aaawoo as civic infrastructure.", evidence: "proven", confidence: 100, source_file: "aaawoo_Master-Context.md" },
+    { id: "e-mascot-aaawoo2", source: "mascot-universe", target: "aaawoo", rel: "supports", description: "The mascot universe is the storytelling engine that markets aaawoo.", evidence: "proven", confidence: 95, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/04_Marketing-Strategy.md" },
+    { id: "e-league-aaawoo", source: "pet-league", target: "aaawoo", rel: "part_of", description: "Pet League is the Phase-2 apex of aaawoo.", evidence: "proven", confidence: 100, source_file: "aaawoo_Master-Context.md" },
+
+    // Pet Card as identity spine -> everything depends on it
+    { id: "e-social-petcard", source: "social-media", target: "pet-card", rel: "depends_on", description: "Every post anchors to a Pet Card; the social surface runs off the identity layer.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/02_Social-Media_Features.md" },
+    { id: "e-lf-petcard", source: "lost-and-found", target: "pet-card", rel: "depends_on", description: "Lost & Found bulletins auto-populate from and re-render the Pet Card.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/03_Lost-and-Found_Features.md" },
+    { id: "e-events-petcard", source: "events-ticketing", target: "pet-card", rel: "depends_on", description: "Tickets, eligibility and memories all live on the Pet Card.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/01_Phase-01/04_Events-and-Ticketing.md" },
+    { id: "e-league-petcard", source: "pet-league", target: "pet-card", rel: "depends_on", description: "Pets enter Pet League via the Pet Card; results are written to it.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/02_Phase-02/01_Pet-League.md" },
+    { id: "e-vendor-petcard", source: "vendor-portal", target: "f-deck-of-cards", rel: "uses", description: "The vendor deck is built from owner-attested Pet Cards.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/01_Phase-01/01_Pet-Card.md" },
+
+    // features part_of their product
+    { id: "e-f1-petcard", source: "f-live-verification", target: "pet-card", rel: "part_of", description: "Live verification is a Pet Card keystone.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/01_Pet-Card_Features.md" },
+    { id: "e-f2-petcard", source: "f-no-delete", target: "pet-card", rel: "part_of", description: "No-delete / vet-lock is a Pet Card keystone.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/01_Pet-Card_Features.md" },
+    { id: "e-f3-petcard", source: "f-deck-of-cards", target: "pet-card", rel: "part_of", description: "The deck-of-cards is a Pet Card keystone.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/01_Pet-Card_Features.md" },
+    { id: "e-f4-petcard", source: "f-microchip-field", target: "pet-card", rel: "part_of", description: "Microchip number + registry link is a Pet Card feature.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/01_Pet-Card_Features.md" },
+    { id: "e-f5-petcard", source: "f-shared-card", target: "pet-card", rel: "part_of", description: "Six-equal-members sharing is a Pet Card feature.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/01_Pet-Card_Features.md" },
+    { id: "e-f6-petcard", source: "f-onboarding-capture", target: "pet-card", rel: "part_of", description: "Onboarding capture is a Pet Card feature.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/01_Phase-01/01_Pet-Card.md" },
+    { id: "e-cap-verify", source: "f-onboarding-capture", target: "f-live-verification", rel: "enables", description: "The live capture implements the live-verification keystone.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/01_Pet-Card_Features.md" },
+
+    { id: "e-prox-social", source: "f-proximity-feed", target: "social-media", rel: "part_of", description: "The proximity feed is the centre of the social surface.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/02_Social-Media_Features.md" },
+    { id: "e-presence-social", source: "f-pet-presence-rule", target: "social-media", rel: "part_of", description: "The pet-presence rule is the social keystone.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/02_Social-Media_Features.md" },
+    { id: "e-cruelty-social", source: "f-cruelty-gate", target: "social-media", rel: "part_of", description: "The cruelty gate is part of the social surface's trust layer.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/02_Social-Media_Features.md" },
+    { id: "e-audio-social", source: "f-closed-audio", target: "social-media", rel: "part_of", description: "The closed audio model is part of the social surface.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/02_Social-Media_Features.md" },
+    { id: "e-tales-social", source: "f-tales", target: "social-media", rel: "part_of", description: "Tales sits inside the social surface under the same rules.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/02_Social-Media_Features.md" },
+
+    { id: "e-bulletin-lf", source: "f-lf-bulletin", target: "lost-and-found", rel: "part_of", description: "The auto-filled bulletin is the core unit of Lost & Found.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/03_Lost-and-Found_Features.md" },
+    { id: "e-resurface-lf", source: "f-lf-gentle-resurfacing", target: "lost-and-found", rel: "part_of", description: "Gentle local resurfacing is the Lost & Found keystone mechanism.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/03_Lost-and-Found_Features.md" },
+    { id: "e-escrow-lf", source: "f-lf-reward-escrow", target: "lost-and-found", rel: "part_of", description: "The reward escrow is the modest monetisation of Lost & Found.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/03_Lost-and-Found_Features.md" },
+    { id: "e-lf-resurface-feed", source: "f-lf-gentle-resurfacing", target: "f-proximity-feed", rel: "uses", description: "Lost & Found resurfacing rides the social proximity engine.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/01_Phase-01/03_Lost-and-Found.md" },
+
+    { id: "e-ticket-events", source: "f-card-is-ticket", target: "events-ticketing", rel: "part_of", description: "Card-is-the-ticket is a core Events mechanism.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/01_Phase-01/04_Events-and-Ticketing.md" },
+    { id: "e-seal-events", source: "f-event-memory-seal", target: "events-ticketing", rel: "part_of", description: "Event memory + seal is the one thing no general platform has.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/04_Events-and-Ticketing_Features.md" },
+    { id: "e-vis-events", source: "f-event-visibility", target: "events-ticketing", rel: "part_of", description: "Visibility packages are the primary Phase-1 Events revenue lever.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/04_Events-and-Ticketing_Features.md" },
+    { id: "e-seal-petcard", source: "f-event-memory-seal", target: "pet-card", rel: "feeds_into", description: "Event memories and seals are written onto the Pet Card timeline.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/01_Phase-01/04_Events-and-Ticketing.md" },
+
+    { id: "e-vcard-vendor", source: "f-vendor-card-deck", target: "vendor-portal", rel: "part_of", description: "The vendor card/portfolio/deck is a Vendor Portal keystone.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/05_Vendor-Portal_Features.md" },
+    { id: "e-bookrule-vendor", source: "f-booking-rule", target: "vendor-portal", rel: "part_of", description: "The booking rule sorts every vendor in the portal.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/05_Vendor-Portal_Features.md" },
+    { id: "e-rent-vendor", source: "f-vendor-rent", target: "vendor-portal", rel: "part_of", description: "Rent-for-presence is the vendor commerce model.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/01_Phase-01/05_Vendor-Portal.md" },
+
+    { id: "e-panel-league", source: "f-community-panel", target: "pet-league", rel: "part_of", description: "Community-as-panel is the defining Pet League keystone.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/06_Pet-League_Features.md" },
+    { id: "e-integ-league", source: "f-integrity-protocol", target: "pet-league", rel: "part_of", description: "The integrity capture protocol is a Pet League keystone.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/06_Pet-League_Features.md" },
+    { id: "e-hof-league", source: "f-hall-of-fame", target: "pet-league", rel: "part_of", description: "The Hall of Fame is a Pet League keystone.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/06_Pet-League_Features.md" },
+    { id: "e-spons-league", source: "f-tiered-sponsorship", target: "pet-league", rel: "part_of", description: "Tiered sponsorship is Pet League's commercial engine.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/06_Pet-League_Features.md" },
+    { id: "e-phys-league", source: "f-physical-recognition", target: "pet-league", rel: "part_of", description: "Physical shields/cards are earned only through Pet League.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/04_Feature-Lists/06_Pet-League_Features.md" },
+    { id: "e-hof-petcard", source: "f-hall-of-fame", target: "pet-card", rel: "feeds_into", description: "Hall of Fame entries and badges live on the Pet Card.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/02_Phase-02/01_Pet-League.md" },
+
+    // microchip wedge logic
+    { id: "e-microchip-petcard", source: "microchip-movement", target: "f-no-delete", rel: "enables", description: "The vet's microchip scan hardens the Pet Card into the locked vet-verified state.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/01_Phase-01/01_Pet-Card.md" },
+    { id: "e-microchip-petcard2", source: "microchip-movement", target: "pet-card", rel: "enables", description: "Microchipping is the go-to-market wedge that drives verified Pet Card adoption.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/01_Phase-01/06_Microchip.md" },
+    { id: "e-microchip-mandate", source: "microchip-movement", target: "mkt-chennai-mandate", rel: "affected_by_market", description: "The wedge rides the GCC mandate and its compliance gap.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/01_Phase-01/06_Microchip.md" },
+    { id: "e-microchip-vets", source: "microchip-movement", target: "mkt-segment-vets", rel: "enables", description: "The locked field routes users to vets, pulling vets onto the platform.", evidence: "proven", confidence: 100, source_file: "06_Editable-Sources/Markdown/01_Phase-01/06_Microchip.md" },
+    { id: "e-vets-vendors", source: "mkt-segment-vets", target: "mkt-segment-vendors", rel: "enables", description: "Onboarded vets seed the verified base that pulls in other vendors.", evidence: "proven", confidence: 90, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/01_Build-Order-and-Revenue.md" },
+    { id: "e-microchip-league", source: "microchip-movement", target: "pet-league", rel: "enables", description: "Microchipping lays the physical-identity foundation Phase-2 (and Pet League) stands on.", evidence: "proven", confidence: 95, source_file: "06_Editable-Sources/Markdown/01_Phase-01/06_Microchip.md" },
+    { id: "e-microchip-lf", source: "microchip-movement", target: "lost-and-found", rel: "supports", description: "Microchipping is the physical-identity anchor that strengthens Lost & Found recovery over time.", evidence: "proven", confidence: 95, source_file: "06_Editable-Sources/Markdown/01_Phase-01/03_Lost-and-Found.md" },
+
+    // build-order critical path
+    { id: "e-events-first", source: "events-ticketing", target: "mkt-segment-pet-parents", rel: "enables", description: "Events is the cheapest intent-led door that seeds the home-state user base.", evidence: "proven", confidence: 95, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/01_Build-Order-and-Revenue.md" },
+    { id: "e-microchip-cp", source: "microchip-movement", target: "events-ticketing", rel: "part_of_critical_path", description: "Build order: Events first, then Microchipping converts users to verified.", evidence: "proven", confidence: 90, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/01_Build-Order-and-Revenue.md" },
+    { id: "e-vendor-cp", source: "vendor-portal", target: "microchip-movement", rel: "part_of_critical_path", description: "Build order: Vendors follow microchipping which brings vets in.", evidence: "proven", confidence: 90, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/01_Build-Order-and-Revenue.md" },
+    { id: "e-league-cp", source: "pet-league", target: "vendor-portal", rel: "part_of_critical_path", description: "Build order: Pet League is last, depending on the verified density the first three build.", evidence: "proven", confidence: 95, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/01_Build-Order-and-Revenue.md" },
+    { id: "e-league-density", source: "pet-league", target: "mkt-segment-pet-parents", rel: "depends_on", description: "A competition with no audience is not a competition; Pet League depends on user density.", evidence: "proven", confidence: 95, source_file: "06_Editable-Sources/Markdown/02_Phase-02/01_Pet-League.md" },
+    { id: "e-league-govt", source: "pet-league", target: "govt-partnership", rel: "supports", description: "Pet League ties into the national/government data thesis as national-scale participation.", evidence: "strongly_supported", confidence: 75, source_file: "aaawoo_Master-Context.md" },
+
+    // government partnership
+    { id: "e-govt-crisis", source: "govt-partnership", target: "mkt-rabies-crisis", rel: "affected_by_market", description: "The government brief is grounded in the rabies/dog-bite public-safety crisis.", evidence: "proven", confidence: 95, source_file: "06_Editable-Sources/Markdown/01_Phase-01/07_Govt-Backing.md" },
+    { id: "e-govt-petcard", source: "govt-partnership", target: "pet-card", rel: "uses", description: "The civic data offering (verified registry) is a byproduct of Pet Card adoption.", evidence: "proven", confidence: 95, source_file: "06_Editable-Sources/Markdown/01_Phase-01/07_Govt-Backing.md" },
+
+    // ownership
+    { id: "e-petcard-own", source: "pet-card", target: "owner-gautam", rel: "owned_by", description: "Founders own product vision; engineering head owns architecture (see Deepak).", evidence: "inferred", confidence: 60, source_file: "06_Editable-Sources/Markdown/00_Read-First/02_The-Team.md" },
+    { id: "e-platform-eng", source: "aaawoo", target: "owner-deepak", rel: "owned_by", description: "Deepak owns platform architecture.", evidence: "proven", confidence: 95, source_file: "aaawoo_Master-Context.md" },
+    { id: "e-vendor-shiva", source: "vendor-portal", target: "owner-shivakumar", rel: "owned_by", description: "Shivakumar owns vendor/marketplace onboarding and operations.", evidence: "proven", confidence: 95, source_file: "06_Editable-Sources/Markdown/01_Phase-01/05_Vendor-Portal.md" },
+    { id: "e-design-karthi", source: "aaawoo", target: "owner-karthikeyan", rel: "owned_by", description: "Karthikeyan owns design & technical art (kept in-house).", evidence: "proven", confidence: 90, source_file: "06_Editable-Sources/Markdown/00_Read-First/02_The-Team.md" },
+    { id: "e-ux-aathyish", source: "aaawoo", target: "owner-aathyish", rel: "owned_by", description: "Aathyish owns the UX/experience layer.", evidence: "proven", confidence: 90, source_file: "06_Editable-Sources/Markdown/00_Read-First/02_The-Team.md" },
+    { id: "e-vet-kaveri", source: "microchip-movement", target: "owner-kaveri", rel: "supports", description: "Dr Kaveri provides clinical credibility for the veterinary/microchip layer.", evidence: "strongly_supported", confidence: 80, source_file: "06_Editable-Sources/Markdown/00_Read-First/02_The-Team.md" },
+    { id: "e-media-bijit", source: "f-closed-audio", target: "owner-bijit", rel: "owned_by", description: "Bijit owns the media & licensing layer, relevant to the owned audio library.", evidence: "strongly_supported", confidence: 70, source_file: "06_Editable-Sources/Markdown/00_Read-First/02_The-Team.md" },
+    { id: "e-mascot-rift", source: "mascot-universe", target: "owner-studio-rift", rel: "vendor_dependency", description: "Studio Rift runs the mascot production pipeline.", evidence: "proven", confidence: 95, source_file: "aaawoo_Master-Context.md" },
+    { id: "e-build-dev", source: "aaawoo", target: "owner-external-dev", rel: "vendor_dependency", description: "The platform build is outsourced to an external dev company.", evidence: "strongly_supported", confidence: 80, source_file: "aaawoo_Master-Context.md" },
+    { id: "e-mkt-agency", source: "mascot-universe", target: "owner-design-pr-agency", rel: "vendor_dependency", description: "Brand identity and marketing placement are outsourced to a design+PR agency.", evidence: "proven", confidence: 85, source_file: "aaawoo_Master-Context.md" },
+    { id: "e-finance-bhanu", source: "cost-total", target: "owner-bhanu", rel: "owned_by", description: "Bhanu (CFO) owns the production cost and unit economics.", evidence: "proven", confidence: 95, source_file: "06_Editable-Sources/Markdown/01_Phase-01/05_Vendor-Portal.md" },
+
+    // costs
+    { id: "e-team-total", source: "cost-team", target: "cost-total", rel: "part_of", description: "Team block is part of the 25.23 Cr total.", evidence: "proven", confidence: 100, source_file: "aaawoo_Master-Context.md" },
+    { id: "e-dev-total", source: "cost-development", target: "cost-total", rel: "part_of", description: "Development block is part of the total.", evidence: "proven", confidence: 100, source_file: "aaawoo_Master-Context.md" },
+    { id: "e-mkt-total", source: "cost-marketing", target: "cost-total", rel: "part_of", description: "Marketing block is part of the total.", evidence: "proven", confidence: 100, source_file: "aaawoo_Master-Context.md" },
+    { id: "e-svc-total", source: "cost-services", target: "cost-total", rel: "part_of", description: "Services block is part of the total.", evidence: "proven", confidence: 100, source_file: "aaawoo_Master-Context.md" },
+    { id: "e-office-total", source: "cost-office", target: "cost-total", rel: "part_of", description: "Office block is part of the total.", evidence: "proven", confidence: 100, source_file: "aaawoo_Master-Context.md" },
+    { id: "e-cost-platform", source: "cost-total", target: "aaawoo", rel: "costs_money", description: "The 25.23 Cr production cost builds the aaawoo platform.", evidence: "proven", confidence: 100, source_file: "aaawoo_Master-Context.md" },
+    { id: "e-team-people", source: "cost-team", target: "owner-gautam", rel: "costs_money", description: "The team block pays the people building aaawoo.", evidence: "proven", confidence: 90, source_file: "aaawoo_Master-Context.md" },
+    { id: "e-mktseed-users", source: "cost-marketing-seed", target: "mkt-segment-pet-parents", rel: "costs_money", description: "The Rs 20 lakh launch seed acquires the first home-state users.", evidence: "proven", confidence: 95, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/01_Build-Order-and-Revenue.md" },
+    { id: "e-mktseed-block", source: "cost-marketing-seed", target: "cost-marketing", rel: "part_of", description: "The launch seed is part of the marketing cost block.", evidence: "inferred", confidence: 70, source_file: "aaawoo_Master-Context.md" },
+    { id: "e-awards-cost", source: "f-physical-recognition", target: "pet-league", rel: "costs_money", description: "The shield-and-card award system is a direct Pet League production cost (~Rs 0.80 Cr 5-yr).", evidence: "proven", confidence: 95, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/01_Build-Order-and-Revenue.md" },
+
+    // revenue
+    { id: "e-events-rev", source: "events-ticketing", target: "rev-events", rel: "generates_revenue", description: "Events generates ticket take-rate plus visibility revenue.", evidence: "proven", confidence: 95, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/01_Build-Order-and-Revenue.md" },
+    { id: "e-microchip-rev", source: "microchip-movement", target: "rev-microchip", rel: "generates_revenue", description: "Microchipping generates a ~10% platform share of the vet's price.", evidence: "proven", confidence: 90, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/01_Build-Order-and-Revenue.md" },
+    { id: "e-vendor-rev", source: "vendor-portal", target: "rev-vendor-band", rel: "generates_revenue", description: "The Vendor Portal generates recurring rent (prediction band).", evidence: "proven", confidence: 90, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/01_Build-Order-and-Revenue.md" },
+    { id: "e-league-rev", source: "pet-league", target: "rev-pet-league", rel: "generates_revenue", description: "Pet League generates sponsorship revenue — the headline driver.", evidence: "proven", confidence: 85, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/01_Build-Order-and-Revenue.md" },
+    { id: "e-social-vis-rev", source: "social-media", target: "rev-visibility", rel: "generates_revenue", description: "User/vendor visibility boosts on the social surface generate the only direct user-paid revenue.", evidence: "proven", confidence: 85, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/01_Build-Order-and-Revenue.md" },
+    { id: "e-cons-total", source: "rev-events", target: "rev-conservative-total", rel: "part_of", description: "Events is part of the conservative revenue total.", evidence: "proven", confidence: 90, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/01_Build-Order-and-Revenue.md" },
+    { id: "e-cons-total2", source: "rev-microchip", target: "rev-conservative-total", rel: "part_of", description: "Microchipping (mid-band) is part of the conservative total.", evidence: "proven", confidence: 90, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/01_Build-Order-and-Revenue.md" },
+    { id: "e-cons-total3", source: "rev-pet-league", target: "rev-conservative-total", rel: "part_of", description: "Pet League is part of the conservative total.", evidence: "proven", confidence: 90, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/01_Build-Order-and-Revenue.md" },
+    { id: "e-rent-revband", source: "f-vendor-rent", target: "rev-vendor-band", rel: "generates_revenue", description: "Rent-for-presence pricing drives the vendor revenue band.", evidence: "proven", confidence: 90, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/01_Build-Order-and-Revenue.md" },
+    { id: "e-spons-leaguerev", source: "f-tiered-sponsorship", target: "rev-pet-league", rel: "generates_revenue", description: "Tiered sponsorship is the source of Pet League revenue.", evidence: "proven", confidence: 90, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/01_Build-Order-and-Revenue.md" },
+
+    // standards / governance
+    { id: "e-revenue-std", source: "rev-vendor-band", target: "std-rent-not-rake", rel: "governed_by", description: "Vendor revenue is governed by the rent-not-rake rule.", evidence: "proven", confidence: 95, source_file: "06_Editable-Sources/Markdown/01_Phase-01/05_Vendor-Portal.md" },
+    { id: "e-lf-paired", source: "lost-and-found", target: "std-paired-design", rel: "governed_by", description: "Lost & Found is the free 'serving hand' under the paired-design law.", evidence: "proven", confidence: 95, source_file: "06_Editable-Sources/Markdown/01_Phase-01/03_Lost-and-Found.md" },
+    { id: "e-events-paired", source: "events-ticketing", target: "std-paired-design", rel: "governed_by", description: "Events ticketing is the 'earning hand' under the paired-design law in Phase 1.", evidence: "proven", confidence: 95, source_file: "06_Editable-Sources/Markdown/01_Phase-01/02_Social-Media.md" },
+    { id: "e-revfig-std", source: "rev-conservative-total", target: "std-never-invent-figure", rel: "governed_by", description: "Revenue figures follow the never-invent-a-figure rule (illustrative, sourced, flagged).", evidence: "proven", confidence: 90, source_file: "aaawoo_Master-Context.md" },
+    { id: "e-mascot-voice", source: "mascot-universe", target: "std-founder-voice", rel: "governed_by", description: "The mascots quietly carry the founders' temperaments, consistent with the founder-voice rule.", evidence: "strongly_supported", confidence: 75, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/04_Marketing-Strategy.md" },
+    { id: "e-docs-mdsot", source: "aaawoo", target: "std-md-source-of-truth", rel: "governed_by", description: "All project documents are governed by the .md-is-source-of-truth rule.", evidence: "proven", confidence: 95, source_file: "aaawoo_Master-Context.md" },
+
+    // risks
+    { id: "e-risk-yearsplit-cost", source: "risk-year-split", target: "cost-total", rel: "conflicts_with", description: "The year-split discrepancy conflicts with the production-cost per-year columns.", evidence: "proven", confidence: 95, source_file: "aaawoo_Master-Context.md" },
+    { id: "e-risk-lf", source: "risk-lostfound-limits", target: "lost-and-found", rel: "affected_by_market", description: "The honest-limitation/overbuild risk attaches to Lost & Found.", evidence: "proven", confidence: 90, source_file: "06_Editable-Sources/Markdown/01_Phase-01/03_Lost-and-Found.md" },
+    { id: "e-risk-mkt", source: "risk-market-uncertainty", target: "mkt-size", rel: "affected_by_market", description: "Market-number uncertainty undermines confidence in the market-size estimate.", evidence: "proven", confidence: 90, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/02_Market-Analysis.md" },
+    { id: "e-risk-mkt2", source: "risk-market-uncertainty", target: "mkt-owned-pets", rel: "affected_by_market", description: "Uncertainty also applies to the owned-pet estimate range.", evidence: "proven", confidence: 90, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/02_Market-Analysis.md" },
+    { id: "e-risk-loyal-brand", source: "risk-loyal-tales-naming", target: "embur-forge", rel: "blocks", description: "The legacy Loyal Tales name lingering in docs is an open flag against the company's clean naming.", evidence: "proven", confidence: 85, source_file: "aaawoo_Master-Context.md" },
+    { id: "e-risk-office", source: "risk-registered-office", target: "embur-forge", rel: "blocks", description: "The registered-office inconsistency is an open legal flag on the company.", evidence: "proven", confidence: 85, source_file: "aaawoo_Master-Context.md" },
+    { id: "e-risk-overbuild", source: "risk-league-overbuild", target: "pet-league", rel: "affected_by_market", description: "Overbuild and sponsor-concentration risk attaches to Pet League.", evidence: "proven", confidence: 90, source_file: "06_Editable-Sources/Markdown/02_Phase-02/01_Pet-League.md" },
+    { id: "e-risk-reveal", source: "risk-reveal-timing", target: "pet-league", rel: "blocks", description: "The reveal must wait for verified density; mistiming undermines the Pet League launch.", evidence: "proven", confidence: 90, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/04_Marketing-Strategy.md" },
+    { id: "e-risk-dpdp", source: "risk-vendor-data-dpdp", target: "vendor-portal", rel: "blocks", description: "The parked DPDP user-data decision is an open question on the Vendor Portal.", evidence: "proven", confidence: 90, source_file: "06_Editable-Sources/Markdown/01_Phase-01/05_Vendor-Portal.md" },
+    { id: "e-risk-integ", source: "risk-league-overbuild", target: "f-integrity-protocol", rel: "affected_by_market", description: "The integrity protocol is the hardest engineering problem driving the overbuild risk.", evidence: "proven", confidence: 90, source_file: "06_Editable-Sources/Markdown/02_Phase-02/01_Pet-League.md" },
+
+    // competitors / validation
+    { id: "e-comp-happy", source: "comp-happy-pet", target: "pet-card", rel: "conflicts_with", description: "Happy Pet is the most direct consumer competitor but its Pet Card is a form with a self-typed chip.", evidence: "proven", confidence: 90, source_file: "05_Brand-and-Social/Competitor-Brief.md" },
+    { id: "e-comp-mbf", source: "comp-mbf", target: "govt-partnership", rel: "conflicts_with", description: "Project MBF is a top-down state-facing approach overlapping aaawoo's civic thesis.", evidence: "proven", confidence: 90, source_file: "05_Brand-and-Social/Competitor-Brief.md" },
+    { id: "e-comp-pk", source: "comp-petkonnect", target: "social-media", rel: "conflicts_with", description: "PetKonnect is an early community/profiles player but lacks a microchip anchor and scale.", evidence: "proven", confidence: 85, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/02_Market-Analysis.md" },
+    { id: "e-comp-validate", source: "comp-mbf", target: "mkt-rabies-crisis", rel: "validates", description: "Funded/capable players circling the space validate that the demand is real.", evidence: "proven", confidence: 85, source_file: "05_Brand-and-Social/Competitor-Brief.md" },
+
+    // clients / partners affect vendor revenue & market
+    { id: "e-mars-vendor", source: "client-mars", target: "mkt-segment-vendors", rel: "part_of", description: "Mars is a named partner in the vendor/partner universe.", evidence: "proven", confidence: 90, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/03_Customer-Landscape.md" },
+    { id: "e-huft-vendor", source: "client-huft", target: "mkt-segment-vendors", rel: "part_of", description: "HUFT is a named partner in the vendor universe.", evidence: "proven", confidence: 90, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/03_Customer-Landscape.md" },
+    { id: "e-super-vendor", source: "client-supertails", target: "mkt-segment-vendors", rel: "part_of", description: "Supertails is a named partner in the vendor universe.", evidence: "proven", confidence: 90, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/03_Customer-Landscape.md" },
+    { id: "e-vetic-vendor", source: "client-vetic", target: "mkt-segment-vets", rel: "part_of", description: "Vetic is a named vet-chain partner.", evidence: "proven", confidence: 90, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/03_Customer-Landscape.md" },
+    { id: "e-drools-vendor", source: "client-drools", target: "mkt-segment-vendors", rel: "part_of", description: "Drools is a named food partner.", evidence: "proven", confidence: 90, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/03_Customer-Landscape.md" },
+    { id: "e-petfed-league", source: "client-pet-fed", target: "pet-league", rel: "supports", description: "Pet Fed is an events partner relevant to Pet League sponsorship.", evidence: "strongly_supported", confidence: 70, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/03_Customer-Landscape.md" },
+    { id: "e-clients-validate", source: "mkt-segment-vendors", target: "rev-vendor-band", rel: "validates", description: "The named partner universe backs the vendor revenue with a real market, not an assumption.", evidence: "proven", confidence: 90, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/03_Customer-Landscape.md" },
+
+    // milestone
+    { id: "e-launch-aaawoo", source: "milestone-launch", target: "aaawoo", rel: "part_of_critical_path", description: "Month 11 launch puts the consumer app + vendor portal live.", evidence: "proven", confidence: 100, source_file: "aaawoo_Master-Context.md" },
+    { id: "e-launch-events", source: "events-ticketing", target: "milestone-launch", rel: "part_of_critical_path", description: "Phase-1 services (Events, Microchip, Vendors) open around the Month-11 launch.", evidence: "proven", confidence: 90, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/01_Build-Order-and-Revenue.md" },
+    { id: "e-mascot-launch", source: "mascot-universe", target: "milestone-launch", rel: "supports", description: "A two-month mascot-led teaser reveal centres the launch with microchipping at its core.", evidence: "proven", confidence: 90, source_file: "06_Editable-Sources/Markdown/03_Budget-and-Markets/04_Marketing-Strategy.md" }
+  ],
+  finance: {
+    currency: "INR_Cr",
+    source: "06_Editable-Sources/Markdown/03_Budget-and-Markets/01_Build-Order-and-Revenue.md",
+    note: "All figures indicative/illustrative. Money IN = the 'Conservative Total' (single home state: Events + Microchip + Pet League) — the figures the founders say they will defend in a room. Money OUT = the 3-year production stack (00_Production-Cost.pdf), maintained as a separate file.",
+    years: ["Year 1","Year 2","Year 3","Year 4","Year 5"],
+    moneyOut: [6.27, 9.01, 9.95, null, null],
+    moneyIn:  [0, 0.49, 6.82, 17.11, 27.97],
+    cumIn:    [0, 0.49, 7.31, 24.42, 52.39],
+    cumOut:   [6.27, 15.28, 25.23, null, null],
+    streams: {
+      "Events & Ticketing": [0, 0.05, 0.06, 0.06, 0.07],
+      "Microchipping":      [0, 0.05, 0.09, 0.16, 0.29],
+      "Pet League":         [0, 0.39, 6.67, 16.89, 27.61]
+    },
+    outsideTotal: {
+      "Vendors (5-yr cumulative, assumed)": "~8.72 – 11.40 Cr",
+      "Visibility boosts (5-yr cumulative, assumed)": "~0.87 – 3.42 Cr"
+    },
+    rules: [
+      "Year 1 earns nothing — it is build time.",
+      "Real earning starts Year 2, month 8, when Pet League launches in Bangalore.",
+      "Pet League is the engine — it dwarfs every other stream.",
+      "Vendor & visibility revenue are honest math on unmeasured inputs, so they are kept OUTSIDE the conservative total.",
+      "The cost plan covers the 3-year build; operating cost beyond Year 3 is not yet modeled, so Year 4-5 show revenue only."
+    ]
+  }
+};
+
+</script>
+<script>
+(function(){
+  "use strict";
+  if(!window.AAAWOO_GRAPH){document.getElementById('cy').innerHTML='<div style="padding:40px;color:#f87171">Could not load graph-data.js — keep it in the same folder as this file.</div>';return;}
+  var DATA = JSON.parse(JSON.stringify(window.AAAWOO_GRAPH));
+  var META = DATA.meta||{generatedAt:'unknown',sources:[]};
+  var TYPE_COLOR = {company:'#a78bfa',system:'#6ea8ff',feature:'#43d399',owner:'#f5c451',cost:'#fb923c',revenue:'#34d399',market:'#c084fc',competitor:'#f87171',client:'#38bdf8',risk:'#ef4444',standard:'#94a3b8',milestone:'#fbbf24'};
+  var TYPE_SHAPE = {company:'round-rectangle',system:'round-rectangle',feature:'ellipse',owner:'ellipse',cost:'round-tag',revenue:'round-tag',market:'diamond',competitor:'diamond',client:'hexagon',risk:'triangle',standard:'round-pentagon',milestone:'star'};
+  var LAYERS = ['architecture','product','financial','market','risk','brand','team','standard'];
+  var AUDIENCES = {
+    founder:{label:'Founder — the whole system, nothing hidden.',layers:LAYERS.slice()},
+    team:{label:'Team — what we build and run: products, architecture, people, standards, risks. Money/market hidden.',layers:['architecture','product','team','standard','risk']},
+    investor:{label:'Investor / client — the case: money, market, brand and the products behind them. Internal detail hidden.',layers:['financial','market','brand','product','risk']}
+  };
+  var activeLayers={}; LAYERS.forEach(function(l){activeLayers[l]=true;});
+  var heat=false,focusMode=false,connectMode=false,connectSrc=null;
+  function evColor(ev){return ev==='proven'?'#43d399':ev==='strongly_supported'?'#7dd3a0':ev==='inferred'?'#f5c451':'#fb923c';}
+  function confColor(c){return c>=80?'#43d399':c>=55?'#f5c451':'#f87171';}
+
+  function toElements(){var els=[];DATA.nodes.forEach(function(n){els.push({data:Object.assign({},n,{_color:TYPE_COLOR[n.type]||'#6b7280',_shape:TYPE_SHAPE[n.type]||'ellipse'})});});DATA.edges.forEach(function(e){els.push({data:Object.assign({},e)});});return els;}
+
+  var cy=cytoscape({container:document.getElementById('cy'),elements:toElements(),minZoom:0.2,maxZoom:2.5,wheelSensitivity:0.25,
+    style:[
+      {selector:'node',style:{'background-color':'data(_color)','shape':'data(_shape)','label':'data(label)','color':'#e6ebf2','font-size':'10px','font-weight':'600','text-valign':'bottom','text-margin-y':'4px','text-wrap':'wrap','text-max-width':'110px','width':'mapData(confidence,0,100,26,46)','height':'mapData(confidence,0,100,26,46)','border-width':2,'border-color':'#0d1017','text-outline-width':2,'text-outline-color':'#0d1017'}},
+      {selector:'node[type="system"]',style:{'width':58,'height':40,'font-size':'11px','font-weight':'700'}},
+      {selector:'node[type="company"]',style:{'width':70,'height':44,'font-size':'12px'}},
+      {selector:'edge',style:{'width':1.4,'line-color':'#39455a','target-arrow-color':'#39455a','target-arrow-shape':'triangle','curve-style':'bezier','arrow-scale':0.8,'opacity':0.55}},
+      {selector:'edge[rel="generates_revenue"]',style:{'line-color':'#34d399','target-arrow-color':'#34d399','opacity':0.8}},
+      {selector:'edge[rel="costs_money"]',style:{'line-color':'#fb923c','target-arrow-color':'#fb923c','opacity':0.8}},
+      {selector:'edge[rel="conflicts_with"]',style:{'line-color':'#f87171','target-arrow-color':'#f87171','line-style':'dashed','opacity':0.9}},
+      {selector:'edge[evidence="inferred"],edge[evidence="assumption"]',style:{'line-style':'dashed'}},
+      {selector:'.sel',style:{'border-width':4,'border-color':'#fff','line-color':'#fff','target-arrow-color':'#fff','opacity':1,'z-index':99}},
+      {selector:'.neighbor',style:{'border-color':'#6ea8ff','border-width':3}},
+      {selector:'.dim',style:{'opacity':0.08}},
+      {selector:'.hide',style:{'display':'none'}}
+    ],
+    layout:{name:'cose',animate:false,nodeRepulsion:9000,idealEdgeLength:95,padding:40,gravity:0.3,nestingFactor:0.9}
+  });
+
+  // layer toggles
+  var lt=document.getElementById('layerToggles');
+  LAYERS.forEach(function(l){var label=document.createElement('label');label.className='chk';label.innerHTML='<input type="checkbox" id="ly_'+l+'" checked><span>'+l+'</span>';lt.appendChild(label);label.querySelector('input').addEventListener('change',function(e){activeLayers[l]=e.target.checked;applyFilters();});});
+  function syncLayerChecks(){LAYERS.forEach(function(l){var el=document.getElementById('ly_'+l);if(el)el.checked=activeLayers[l];});}
+  // audience
+  function setAudience(a){var def=AUDIENCES[a];document.getElementById('audDesc').textContent=def.label;LAYERS.forEach(function(l){activeLayers[l]=def.layers.indexOf(l)>=0;});syncLayerChecks();applyFilters();document.querySelectorAll('#aud button').forEach(function(b){b.classList.toggle('on',b.dataset.a===a);});}
+  document.querySelectorAll('#aud button').forEach(function(b){b.onclick=function(){setAudience(b.dataset.a);};});
+
+  var leg=document.getElementById('typeLegend');
+  Object.keys(TYPE_COLOR).forEach(function(t){var s=document.createElement('span');s.innerHTML='<i class="dot" style="background:'+TYPE_COLOR[t]+'"></i>'+t;leg.appendChild(s);});
+
+  function renderHealth(){var n=DATA.nodes,e=DATA.edges;var assum=n.filter(function(x){return x.evidence==='assumption'||x.evidence==='inferred';}).length;var risks=n.filter(function(x){return x.type==='risk'&&x.reality!=='deprecated';}).length;var avgC=Math.round(n.reduce(function(a,x){return a+(+x.confidence||0);},0)/n.length);var totalCost=(n.find(function(x){return x.id==='cost-total';})||{financial:{}}).financial.amount_inr;var rev=n.filter(function(x){return x.type==='revenue';}).length;var weakEdges=e.filter(function(x){return x.evidence==='inferred'||x.evidence==='assumption';}).length;function row(k,v,c){return '<div class="stat"><span>'+k+'</span><b style="color:'+(c||'')+'">'+v+'</b></div>';}document.getElementById('health').innerHTML=row('Nodes',n.length)+row('Connections',e.length)+row('Avg confidence',avgC+'%',confColor(avgC))+row('Open risks',risks,risks?'#f87171':'')+row('Assumed / inferred',assum,assum?'#f5c451':'')+row('Revenue streams',rev,'#34d399')+row('Weak links',weakEdges,weakEdges?'#f5c451':'')+row('Production cost',totalCost?('₹'+(totalCost/1e7).toFixed(2)+' Cr'):'—','#fb923c');}
+  renderHealth();
+
+  function applyFilters(){var q=(document.getElementById('search').value||'').toLowerCase().trim();cy.batch(function(){cy.nodes().forEach(function(nd){var d=nd.data();var layOk=activeLayers[d.layer]!==false;var qOk=!q||(d.label&&d.label.toLowerCase().indexOf(q)>=0)||(d.description&&d.description.toLowerCase().indexOf(q)>=0)||(d.type&&d.type.indexOf(q)>=0);if(layOk&&qOk)nd.removeClass('hide');else nd.addClass('hide');});cy.edges().forEach(function(ed){if(ed.source().hasClass('hide')||ed.target().hasClass('hide'))ed.addClass('hide');else ed.removeClass('hide');});});}
+  document.getElementById('search').addEventListener('input',applyFilters);
+
+  function applyHeat(){cy.batch(function(){cy.nodes().forEach(function(nd){nd.style('background-color',heat?confColor(+nd.data('confidence')||0):nd.data('_color'));});});}
+  document.getElementById('btnHeat').addEventListener('click',function(){heat=!heat;this.classList.toggle('on',heat);this.textContent='Heatmap: '+(heat?'confidence':'off');applyHeat();});
+
+  function relText(r){return (r||'related').replace(/_/g,' ');}
+  function badge(txt,color){return '<span class="badge" style="background:'+color+'22;color:'+color+';border:1px solid '+color+'55">'+txt+'</span>';}
+  function icard(t,v,cls){return '<div class="icard '+(cls||'')+'"><div class="t">'+t+'</div><div class="v">'+v+'</div></div>';}
+
+  function inspectNode(nd){var d=nd.data();document.getElementById('rsub').textContent=d.type+' · '+(d.layer||'')+' · '+(d.phase||'');var fin='';if(d.financial&&d.financial.amount_inr){fin='<div class="field"><div class="flabel">'+(d.financial.kind||'amount')+'</div><div class="fval" style="color:#fb923c;font-weight:700">₹'+(d.financial.amount_inr/1e7).toFixed(2)+' Cr'+(d.financial.note?' <span style="color:var(--muted);font-weight:400">— '+d.financial.note+'</span>':'')+'</div></div>';}var risk=d.risk_note?'<div class="field"><div class="flabel">Risk note</div><div class="fval" style="color:#f87171">'+d.risk_note+'</div></div>':'';var conns=cy.edges().filter(function(e){return e.source().id()===d.id||e.target().id()===d.id;});var cHtml='';conns.forEach(function(e){var ed=e.data();var other=ed.source===d.id?e.target():e.source();var dir=ed.source===d.id?'→':'←';cHtml+='<div class="conn" data-go="'+other.id()+'"><span>'+dir+' '+other.data('label')+'</span><small>'+relText(ed.rel)+'</small></div>';});
+    document.getElementById('inspector').innerHTML='<div class="field"><div class="fval" style="font-size:16px;font-weight:700">'+d.label+'</div></div>'+badge(d.type,TYPE_COLOR[d.type]||'#888')+badge(d.reality||'current','#6ea8ff')+badge((d.evidence||'').replace(/_/g,' '),evColor(d.evidence))+'<div class="field" style="margin-top:10px"><div class="flabel">What it is</div><div class="fval">'+(d.description||'—')+'</div></div>'+fin+risk+'<div class="field"><div class="flabel">Confidence</div><div class="fval">'+(d.confidence||0)+'%<div class="meter"><i style="width:'+(d.confidence||0)+'%;background:'+confColor(d.confidence)+'"></i></div></div></div>'+(d.source_quote?'<div class="field"><div class="flabel">Evidence (source quote)</div><div class="quote">"'+d.source_quote+'"</div></div>':'')+(d.source_file?'<div class="field"><div class="flabel">Source file</div><div class="srcfile">'+d.source_file+'</div></div>':'<div class="field"><div class="flabel">Source</div><div class="fval" style="color:#f87171">unsourced — added manually</div></div>')+'<div class="field"><div class="flabel">Connections ('+conns.length+')</div>'+(cHtml||'<div class="fval" style="color:var(--muted)">none yet</div>')+'</div>'+'<div class="editbtns"><button class="btn" id="edEdit">Edit</button><button class="btn" id="edConn">Connect from here</button><button class="btn" id="edDel" style="border-color:#5a2a2a;color:#f87171">Delete</button></div>';
+    document.querySelectorAll('.conn').forEach(function(c){c.addEventListener('click',function(){selectNode(cy.getElementById(c.dataset.go));});});
+    document.getElementById('edDel').onclick=function(){if(confirm('Delete "'+d.label+'" and its connections?'))removeNode(d.id);};
+    document.getElementById('edConn').onclick=function(){startConnect(d.id);};
+    document.getElementById('edEdit').onclick=function(){editNode(nd);};
+    bottomNode(d,conns);
+  }
+  function inspectEdge(ed){var d=ed.data();document.getElementById('rsub').textContent='connection · '+relText(d.rel);document.getElementById('inspector').innerHTML='<div class="field"><div class="fval" style="font-size:15px;font-weight:700">'+ed.source().data('label')+' <span style="color:var(--accent)">'+relText(d.rel)+'</span> '+ed.target().data('label')+'</div></div>'+badge((d.evidence||'').replace(/_/g,' '),evColor(d.evidence))+badge(d.confidence+'% conf',confColor(d.confidence))+'<div class="field" style="margin-top:10px"><div class="flabel">Why this connection exists</div><div class="fval">'+(d.description||'—')+'</div></div>'+(d.source_file?'<div class="field"><div class="flabel">Source</div><div class="srcfile">'+d.source_file+'</div></div>':'')+'<div class="editbtns"><button class="btn" id="edDelE" style="border-color:#5a2a2a;color:#f87171">Delete connection</button></div>';document.getElementById('edDelE').onclick=function(){if(confirm('Delete this connection?')){DATA.edges=DATA.edges.filter(function(x){return x.id!==d.id;});ed.remove();clearSel();}};document.getElementById('bTitle').textContent='Connection: '+relText(d.rel);document.getElementById('bLead').textContent=d.description||'';document.getElementById('bInsight').innerHTML=icard('From',ed.source().data('label'))+icard('To',ed.target().data('label'))+icard('Evidence',(d.evidence||'').replace(/_/g,' '),(d.evidence==='inferred'||d.evidence==='assumption')?'warn':'')+icard('Confidence',d.confidence+'%');}
+  function bottomNode(d,conns){document.getElementById('bTitle').textContent=d.label;var why=d.type==='risk'?'This is a flagged risk. Resolve or accept it consciously.':d.type==='cost'?'A cost driver. Money flows OUT here.':d.type==='revenue'?'A revenue path. Money flows IN here — protect it.':d.type==='system'?'A core product block. Many things depend on it.':d.type==='standard'?'A working rule the project holds itself to.':'Part of the system. See connections to understand its role.';document.getElementById('bLead').textContent=why+' '+(d.description||'');var cards='';cards+=icard('Type / layer',d.type+' · '+(d.layer||''));cards+=icard('Reality',d.reality||'current');cards+=icard('Evidence',(d.evidence||'').replace(/_/g,' '),(d.evidence==='inferred'||d.evidence==='assumption')?'warn':'');cards+=icard('Confidence',(d.confidence||0)+'%',(d.confidence<55)?'bad':(d.confidence<80?'warn':''));cards+=icard('Connections',conns.length+'');if(d.financial&&d.financial.amount_inr)cards+=icard(d.financial.kind||'money','₹'+(d.financial.amount_inr/1e7).toFixed(2)+' Cr',d.financial.kind==='cost'?'warn':'');if(d.risk_note)cards+=icard('Watch out',d.risk_note,'bad');if(!d.source_file)cards+=icard('Source','unsourced — needs proof','bad');document.getElementById('bInsight').innerHTML=cards;}
+  function clearSel(){cy.elements().removeClass('sel neighbor dim');document.getElementById('rsub').textContent='Nothing selected';document.getElementById('inspector').innerHTML='<div class="empty">Select a node or edge.</div>';}
+  function selectNode(nd){cy.elements().removeClass('sel neighbor dim');nd.addClass('sel');var nb=nd.closedNeighborhood();if(focusMode){cy.elements().addClass('dim');nb.removeClass('dim');nd.removeClass('dim');}nb.nodes().not(nd).addClass('neighbor');inspectNode(nd);cy.animate({center:{eles:nd}},{duration:250});}
+  cy.on('tap','node',function(evt){var nd=evt.target;if(connectMode&&connectSrc){finishConnect(connectSrc,nd.id());return;}selectNode(nd);});
+  cy.on('tap','edge',function(evt){cy.elements().removeClass('sel neighbor dim');evt.target.addClass('sel');inspectEdge(evt.target);});
+  cy.on('tap',function(evt){if(evt.target===cy){clearSel();document.getElementById('bTitle').textContent='Executive read-out';document.getElementById('bLead').textContent='Click anything in the graph and this panel explains it.';document.getElementById('bInsight').innerHTML='';}});
+  cy.on('dbltap','node',function(evt){editNode(evt.target);});
+
+  function editNode(nd){var d=nd.data();document.getElementById('inspector').innerHTML='<div class="field"><div class="flabel">Name</div><input class="ed" id="eName" value="'+(d.label||'').replace(/"/g,'&quot;')+'"></div>'+'<div class="field"><div class="flabel">Type</div><input class="ed" id="eType" value="'+(d.type||'')+'"></div>'+'<div class="field"><div class="flabel">Layer</div><input class="ed" id="eLayer" value="'+(d.layer||'')+'"></div>'+'<div class="field"><div class="flabel">Confidence (0-100)</div><input class="ed" id="eConf" value="'+(d.confidence||0)+'"></div>'+'<div class="field"><div class="flabel">Description</div><textarea id="eDesc" rows="4">'+(d.description||'')+'</textarea></div>'+'<div class="editbtns"><button class="btn" id="eCancel">Cancel</button><button class="btn on" id="eSave">Save</button></div>';document.getElementById('eCancel').onclick=function(){selectNode(nd);};document.getElementById('eSave').onclick=function(){d.label=document.getElementById('eName').value;d.type=document.getElementById('eType').value;d.layer=document.getElementById('eLayer').value;d.confidence=+document.getElementById('eConf').value||0;d.description=document.getElementById('eDesc').value;nd.data('label',d.label);nd.data('type',d.type);nd.data('layer',d.layer);nd.data('confidence',d.confidence);nd.data('description',d.description);nd.data('_color',TYPE_COLOR[d.type]||'#6b7280');nd.data('_shape',TYPE_SHAPE[d.type]||'ellipse');nd.style('background-color',heat?confColor(d.confidence):nd.data('_color'));nd.style('shape',nd.data('_shape'));var ref=DATA.nodes.find(function(x){return x.id===d.id;});if(ref)Object.assign(ref,{label:d.label,type:d.type,layer:d.layer,confidence:d.confidence,description:d.description});renderHealth();applyFilters();selectNode(nd);};}
+
+  var addModal=document.getElementById('addModal');
+  document.getElementById('btnAdd').onclick=function(){addModal.style.display='flex';};
+  document.getElementById('addCancel').onclick=function(){addModal.style.display='none';};
+  document.getElementById('addOk').onclick=function(){var name=document.getElementById('nName').value.trim();if(!name)return;var t=document.getElementById('nType').value.trim()||'feature';var l=document.getElementById('nLayer').value.trim()||'product';var desc=document.getElementById('nDesc').value.trim();var id='user-'+Date.now();var node={id:id,label:name,type:t,layer:l,phase:'na',reality:'proposed',description:desc,evidence:'assumption',confidence:30,source_file:'',source_quote:'',financial:{amount_inr:null,kind:null,note:''},risk_note:''};DATA.nodes.push(node);cy.add({group:'nodes',data:Object.assign({},node,{_color:TYPE_COLOR[t]||'#6b7280',_shape:TYPE_SHAPE[t]||'ellipse'}),position:{x:cy.width()/2,y:cy.height()/2}});addModal.style.display='none';document.getElementById('nName').value='';document.getElementById('nDesc').value='';renderHealth();applyFilters();selectNode(cy.getElementById(id));};
+
+  function startConnect(srcId){connectMode=true;connectSrc=srcId;document.getElementById('btnConnect').classList.add('on');document.getElementById('hint').textContent='Connect mode: click the target node (Esc to cancel)';}
+  function finishConnect(srcId,tgtId){if(srcId===tgtId){cancelConnect();return;}var rel=prompt('Relationship type? (e.g. depends_on, generates_revenue, supports, conflicts_with)','depends_on');if(!rel){cancelConnect();return;}var why=prompt('Why does this connection exist?','')||'';var id='ue-'+Date.now();var edge={id:id,source:srcId,target:tgtId,rel:rel,description:why,evidence:'assumption',confidence:30,source_file:'manual'};DATA.edges.push(edge);cy.add({group:'edges',data:edge});cancelConnect();renderHealth();cy.elements().removeClass('sel');cy.getElementById(id).addClass('sel');inspectEdge(cy.getElementById(id));}
+  function cancelConnect(){connectMode=false;connectSrc=null;document.getElementById('btnConnect').classList.remove('on');document.getElementById('hint').textContent='Click a node to inspect · drag to move · double-click to edit';}
+  document.getElementById('btnConnect').onclick=function(){if(connectMode){cancelConnect();return;}var sel=cy.$('.sel').filter('node');if(sel.length)startConnect(sel.id());else alert('Select a node first, then click Connect.');};
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')cancelConnect();});
+  function removeNode(id){DATA.nodes=DATA.nodes.filter(function(x){return x.id!==id;});DATA.edges=DATA.edges.filter(function(x){return x.source!==id&&x.target!==id;});cy.getElementById(id).remove();clearSel();renderHealth();}
+
+  document.getElementById('btnFocus').onclick=function(){focusMode=!focusMode;this.classList.toggle('on',focusMode);if(!focusMode)cy.elements().removeClass('dim');else{var s=cy.$('.sel');if(s.length)selectNode(s.filter('node'));}};
+  document.getElementById('btnFit').onclick=function(){cy.animate({fit:{padding:40}},{duration:300});};
+  function snapshot(){var pos={};cy.nodes().forEach(function(n){pos[n.id()]=n.position();});return {meta:META,nodes:DATA.nodes.map(function(n){return Object.assign({},n,{_pos:pos[n.id]});}),edges:DATA.edges};}
+  document.getElementById('btnSave').onclick=function(){try{localStorage.setItem('aaawoo_graph',JSON.stringify(snapshot()));var b=this;b.textContent='Saved ✓';setTimeout(function(){b.textContent='Save';},1200);}catch(e){alert('Could not save locally: '+e.message);}};
+  document.getElementById('btnExport').onclick=function(){var blob=new Blob([JSON.stringify(snapshot(),null,2)],{type:'application/json'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='aaawoo-graph.json';a.click();};
+  document.getElementById('btnImport').onclick=function(){document.getElementById('fileIn').click();};
+  document.getElementById('fileIn').onchange=function(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(){try{loadGraph(JSON.parse(r.result));}catch(err){alert('Bad JSON: '+err.message);}};r.readAsText(f);};
+  function loadGraph(j){DATA.nodes=j.nodes.map(function(n){var c=Object.assign({},n);delete c._pos;return c;});DATA.edges=j.edges;cy.elements().remove();cy.add(toElements());var hasPos=j.nodes.some(function(n){return n._pos;});if(hasPos)cy.nodes().forEach(function(n){var src=j.nodes.find(function(x){return x.id===n.id();});if(src&&src._pos)n.position(src._pos);});else cy.layout({name:'cose',animate:false,nodeRepulsion:9000,idealEdgeLength:95,padding:40}).run();renderHealth();applyFi
